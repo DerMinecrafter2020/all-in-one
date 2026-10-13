@@ -33,6 +33,24 @@ export default function AdvertisingBanner() {
 
   if (!userUuid || !settings?.enabled) return null;
 
+  if (settings.mode === 'sandboxed_iframe') {
+    return (
+      <aside className='calagopus-ad-banner-slot' aria-label={tExt('ads.bannerLabel', {})}>
+        <div className='calagopus-ad-banner-inner'>
+          <span className='calagopus-ad-banner-label'>{tExt('ads.bannerLabel', {})}</span>
+          <iframe
+            className='calagopus-ad-iframe'
+            src={settings.customAdIframeUrl}
+            title={tExt('ads.iframeTitle', {})}
+            sandbox='allow-scripts allow-popups'
+            loading='lazy'
+            referrerPolicy='no-referrer'
+          />
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className='calagopus-ad-banner-slot' aria-label={tExt('ads.bannerLabel', {})}>
       <div className='calagopus-ad-banner-inner'>

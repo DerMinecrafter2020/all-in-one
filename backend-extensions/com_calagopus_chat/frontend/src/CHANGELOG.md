@@ -1,5 +1,8 @@
 # Calagopus Chat changelog
 
+## 0.2.4 — 2026-10-13
+- Added sandboxed HTTPS iframe ads for providers that supply an embeddable ad URL, without relaxing the Panel CSP.
+
 ## 0.2.3 — 2026-10-13
 - Added a separate Advertising admin page and custom HTTPS image/link banners across authenticated Panel pages.
 - Upgraded the minimum supported Panel version to 1.2.5.

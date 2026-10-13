@@ -15,9 +15,11 @@ mod get {
     #[derive(ToSchema, Serialize)]
     struct SettingsResponse {
         enabled: bool,
+        mode: String,
         custom_ad_image_url: String,
         custom_ad_target_url: String,
         custom_ad_alt_text: String,
+        custom_ad_iframe_url: String,
     }
 
     #[derive(ToSchema, Serialize)]
@@ -35,9 +37,11 @@ mod get {
         ApiResponse::new_serialized(Response {
             settings: SettingsResponse {
                 enabled: settings.advertising_enabled,
+                mode: settings.advertising_mode.to_string(),
                 custom_ad_image_url: settings.custom_ad_image_url.to_string(),
                 custom_ad_target_url: settings.custom_ad_target_url.to_string(),
                 custom_ad_alt_text: settings.custom_ad_alt_text.to_string(),
+                custom_ad_iframe_url: settings.custom_ad_iframe_url.to_string(),
             },
         })
         .ok()
@@ -50,9 +54,11 @@ mod put {
     #[derive(ToSchema, Deserialize)]
     struct PayloadData {
         enabled: bool,
+        mode: String,
         custom_ad_image_url: String,
         custom_ad_target_url: String,
         custom_ad_alt_text: String,
+        custom_ad_iframe_url: String,
     }
 
     #[derive(ToSchema, Serialize)]
@@ -85,19 +91,30 @@ mod put {
     ) -> ApiResponseResult {
         permissions.has_admin_permission("extensions.manage")?;
 
+        let mode = data.mode.trim();
         let custom_ad_image_url = data.custom_ad_image_url.trim();
         let custom_ad_target_url = data.custom_ad_target_url.trim();
         let custom_ad_alt_text = data.custom_ad_alt_text.trim();
+        let custom_ad_iframe_url = data.custom_ad_iframe_url.trim();
 
-        let values_are_within_limits = custom_ad_image_url.len() <= 512
+        let mode_is_valid = matches!(mode, "custom_banner" | "sandboxed_iframe");
+        let values_are_within_limits = mode.len() <= 32
+            && custom_ad_image_url.len() <= 512
             && custom_ad_target_url.len() <= 512
-            && custom_ad_alt_text.chars().count() <= 120;
+            && custom_ad_alt_text.chars().count() <= 120
+            && custom_ad_iframe_url.len() <= 512;
         let banner_settings_are_valid = !data.enabled
-            || (is_https_url(custom_ad_image_url)
-                && is_https_url(custom_ad_target_url)
-                && !custom_ad_alt_text.is_empty());
+            || match mode {
+                "custom_banner" => {
+                    is_https_url(custom_ad_image_url)
+                        && is_https_url(custom_ad_target_url)
+                        && !custom_ad_alt_text.is_empty()
+                }
+                "sandboxed_iframe" => is_https_url(custom_ad_iframe_url),
+                _ => false,
+            };
 
-        if !values_are_within_limits || !banner_settings_are_valid {
+        if !mode_is_valid || !values_are_within_limits || !banner_settings_are_valid {
             return Err(invalid_settings());
         }
 
@@ -107,9 +124,11 @@ mod put {
                 settings.find_mut_extension_settings()?;
 
             extension_settings.advertising_enabled = data.enabled;
+            extension_settings.advertising_mode = mode.into();
             extension_settings.custom_ad_image_url = custom_ad_image_url.into();
             extension_settings.custom_ad_target_url = custom_ad_target_url.into();
             extension_settings.custom_ad_alt_text = custom_ad_alt_text.into();
+            extension_settings.custom_ad_iframe_url = custom_ad_iframe_url.into();
         }
 
         settings.save().await?;
@@ -120,6 +139,7 @@ mod put {
                 serde_json::json!({
                     "extension": "com.calagopus.chat",
                     "advertising_enabled": data.enabled,
+                    "advertising_mode": mode,
                 }),
             )
             .await;

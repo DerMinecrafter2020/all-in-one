@@ -8,6 +8,7 @@ import {
   Group,
   Loader,
   Paper,
+  Select,
   Stack,
   Switch,
   Text,
@@ -21,6 +22,7 @@ import getAdvertisingSettings from './api/getAdvertisingSettings.ts';
 import updateAdvertisingSettings from './api/updateAdvertisingSettings.ts';
 import {
   updateAdvertisingSettingsSchema,
+  type AdvertisingMode,
   type UpdateAdvertisingSettings,
 } from './lib/schemas.ts';
 import { useExtTranslations } from './translations.ts';
@@ -34,9 +36,11 @@ export default function AdvertisingSettingsPage() {
   const form = useForm<UpdateAdvertisingSettings>({
     initialValues: {
       enabled: false,
+      mode: 'custom_banner',
       customAdImageUrl: '',
       customAdTargetUrl: '',
       customAdAltText: '',
+      customAdIframeUrl: '',
     },
     validateInputOnBlur: true,
     validate: zod4Resolver(updateAdvertisingSettingsSchema),
@@ -71,6 +75,11 @@ export default function AdvertisingSettingsPage() {
       setSaving(false);
     }
   };
+
+  const modeOptions: { value: AdvertisingMode; label: string }[] = [
+    { value: 'custom_banner', label: t('ads.modeCustom', {}) },
+    { value: 'sandboxed_iframe', label: t('ads.modeIframe', {}) },
+  ];
 
   if (loading) {
     return (
@@ -112,29 +121,53 @@ export default function AdvertisingSettingsPage() {
                 {...form.getInputProps('enabled', { type: 'checkbox' })}
               />
 
-              <Stack gap='sm'>
-                <TextInput
-                  label={t('ads.customImageUrl', {})}
-                  placeholder='https://example.com/banner.png'
-                  maxLength={512}
-                  disabled={saving}
-                  {...form.getInputProps('customAdImageUrl')}
-                />
-                <TextInput
-                  label={t('ads.customTargetUrl', {})}
-                  placeholder='https://example.com/'
-                  maxLength={512}
-                  disabled={saving}
-                  {...form.getInputProps('customAdTargetUrl')}
-                />
-                <TextInput
-                  label={t('ads.customAltText', {})}
-                  maxLength={120}
-                  disabled={saving}
-                  {...form.getInputProps('customAdAltText')}
-                />
-                <Text size='xs' c='dimmed'>{t('ads.customHelp', {})}</Text>
-              </Stack>
+              <Select
+                label={t('ads.mode', {})}
+                data={modeOptions}
+                value={form.values.mode}
+                onChange={(value) => {
+                  if (value) form.setFieldValue('mode', value as AdvertisingMode);
+                }}
+                allowDeselect={false}
+                disabled={saving}
+              />
+
+              {form.values.mode === 'custom_banner' ? (
+                <Stack gap='sm'>
+                  <TextInput
+                    label={t('ads.customImageUrl', {})}
+                    placeholder='https://example.com/banner.png'
+                    maxLength={512}
+                    disabled={saving}
+                    {...form.getInputProps('customAdImageUrl')}
+                  />
+                  <TextInput
+                    label={t('ads.customTargetUrl', {})}
+                    placeholder='https://example.com/'
+                    maxLength={512}
+                    disabled={saving}
+                    {...form.getInputProps('customAdTargetUrl')}
+                  />
+                  <TextInput
+                    label={t('ads.customAltText', {})}
+                    maxLength={120}
+                    disabled={saving}
+                    {...form.getInputProps('customAdAltText')}
+                  />
+                  <Text size='xs' c='dimmed'>{t('ads.customHelp', {})}</Text>
+                </Stack>
+              ) : (
+                <Stack gap='sm'>
+                  <TextInput
+                    label={t('ads.iframeUrl', {})}
+                    placeholder='https://ads.example.com/embed/…'
+                    maxLength={512}
+                    disabled={saving}
+                    {...form.getInputProps('customAdIframeUrl')}
+                  />
+                  <Text size='xs' c='dimmed'>{t('ads.iframeHelp', {})}</Text>
+                </Stack>
+              )}
 
               <Group justify='flex-end'>
                 <Button type='submit' loading={saving} disabled={saving}>

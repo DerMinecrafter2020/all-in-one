@@ -736,6 +736,14 @@
   object-fit: contain;
 }
 
+.calagopus-ad-iframe {
+  display: block;
+  width: 100%;
+  height: 90px;
+  border: 0;
+  border-radius: var(--mantine-radius-sm);
+}
+
 .calagopus-advertising-settings {
   width: 100%;
   max-width: 960px;

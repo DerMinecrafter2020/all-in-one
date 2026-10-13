@@ -138,21 +138,22 @@ export const adminSettingsResponseSchema = z.object({
   tokenUsage: tokenUsageSchema,
 });
 
+export const advertisingModeSchema = z.enum(['custom_banner', 'sandboxed_iframe']);
+
 export const advertisingSettingsSchema = z.object({
   enabled: z.boolean(),
+  mode: advertisingModeSchema,
   customAdImageUrl: z.string().max(512),
   customAdTargetUrl: z.string().max(512),
   customAdAltText: z.string().max(120),
+  customAdIframeUrl: z.string().max(512),
 });
 
 export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRefine(
   (settings, context) => {
     if (!settings.enabled) return;
 
-    for (const [field, value] of [
-      ['customAdImageUrl', settings.customAdImageUrl],
-      ['customAdTargetUrl', settings.customAdTargetUrl],
-    ] as const) {
+    const validateHttpsUrl = (field: string, value: string) => {
       let validHttpsUrl = false;
       try {
         const url = new URL(value);
@@ -168,7 +169,15 @@ export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRe
           message: 'Enter a valid HTTPS URL.',
         });
       }
+    };
+
+    if (settings.mode === 'sandboxed_iframe') {
+      validateHttpsUrl('customAdIframeUrl', settings.customAdIframeUrl);
+      return;
     }
+
+    validateHttpsUrl('customAdImageUrl', settings.customAdImageUrl);
+    validateHttpsUrl('customAdTargetUrl', settings.customAdTargetUrl);
 
     if (!settings.customAdAltText.trim()) {
       context.addIssue({
@@ -220,5 +229,6 @@ export type ChatMessage = z.infer<typeof messageSchema>;
 export type ChatUser = z.infer<typeof userSummarySchema>;
 export type ProviderModelsRequest = z.infer<typeof providerModelsRequestSchema>;
 export type UpdateAdminSettings = z.infer<typeof updateAdminSettingsSchema>;
+export type AdvertisingMode = z.infer<typeof advertisingModeSchema>;
 export type AdvertisingSettings = z.infer<typeof advertisingSettingsSchema>;
 export type UpdateAdvertisingSettings = z.infer<typeof updateAdvertisingSettingsSchema>;

@@ -17,12 +17,12 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.2.3`)
+- The Git tag, prefixed with `v` (for example, `v0.2.4`)
 
-Start from the current version, `0.2.3`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.2.4`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
-0.2.3 → 0.2.4 → … → 0.2.10 → 0.3.0
+0.2.4 → 0.2.5 → … → 0.2.10 → 0.3.0
 0.10.10 → 1.0.0
 ```
 
@@ -44,7 +44,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download the `.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release Calagopus Chat → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.3`.
+To start a release manually, use **Actions → Release Calagopus Chat → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.4`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 

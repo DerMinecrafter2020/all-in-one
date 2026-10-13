@@ -10,7 +10,7 @@ A native Calagopus Panel extension that adds an always-available, theme-aware ch
 - Optional AI-enabled group chats that answer only when a member explicitly mentions `@AI`.
 - A first-use AI chat guide explaining privacy, safe use, and available chat commands.
 - A `/status` chat command with a searchable server picker that reads live status directly from the Panel without an AI-provider call.
-- Admin-configurable custom HTTPS image/link banners across authenticated Panel pages.
+- Admin-configurable custom image/link or sandboxed iframe banners across authenticated Panel pages.
 - An animated typing indicator while AI responses are being prepared.
 - Remove a conversation from your own chat list without deleting it for other participants.
 - Conversation history and unread message counts persisted in PostgreSQL.
@@ -57,7 +57,7 @@ OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use th
 
 ## Advertising banners
 
-Administrators configure custom HTTPS image/link banners on the separate **Admin → Advertising** page, not in Chat settings. Banners appear across authenticated Panel pages. Links are marked as sponsored and opened in a new tab; the extension does not accept arbitrary banner HTML or JavaScript or load an advertising-network script.
+Administrators configure advertising on the separate **Admin → Advertising** page, not in Chat settings. Choose a custom HTTPS image/link or a sandboxed HTTPS iframe from a provider that supports embed URLs. Iframes run in an isolated sandbox; the extension does not execute provider JavaScript in the Panel page. Google AdSense uses a script-based embed, so use an iframe-compatible provider for this mode.
 
 ## Official documentation
 
