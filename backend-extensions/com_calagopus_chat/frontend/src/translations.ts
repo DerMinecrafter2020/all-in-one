@@ -173,7 +173,7 @@ const translations = defineTranslations({
     ads: {
       sidebarTitle: 'Advertising',
       title: 'Advertising banners',
-      description: 'Configure a custom or sandboxed third-party banner shown above authenticated Panel pages. These settings are separate from Chat settings.',
+      description: 'Configure four independent custom or sandboxed banner placements on authenticated Panel pages. These settings are separate from Chat settings.',
       loading: 'Loading advertising settings…',
       enable: 'Enable advertising banners',
       enableDescription: 'Enable each placement separately and choose where placements are shown.',

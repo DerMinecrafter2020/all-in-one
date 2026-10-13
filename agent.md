@@ -1,5 +1,12 @@
 # Agent instructions
 
+## Project overview
+
+- This repository contains the Calagopus Chat extension source, not the Panel itself. The extension package is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat/`.
+- Current extension version: `0.2.5`. Minimum supported Calagopus Panel version: `1.2.5` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- The extension provides direct/group/AI chat, server information and confirmed power actions, a first-use AI guide, `/status`, and advertising placements.
+- The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here and in `.github/workflows/release.yml`.
+
 ## Extension identity and layout
 
 - The Calagopus package name is `com.calagopus.chat`; its extension directory is `backend-extensions/com_calagopus_chat`.
@@ -10,6 +17,35 @@
 - Keep `frontend/src/CHANGELOG.md` current; the admin Chat Settings page renders its release entries.
 - When building from a Panel checkout, build `frontend/dist` before building Rust; the Panel's `shared` crate build script requires those frontend assets.
 - Keep the AI provider key in Calagopus encrypted extension settings. Never return it from an API endpoint, commit it, or include it in logs or release notes.
+
+### Main implementation areas
+
+- `src/lib.rs`: extension entry point and registration of admin/client API routers.
+- `src/settings.rs`: persistent extension settings. AI provider and Panel control keys use encrypted storage; advertising settings are public configuration, not secrets.
+- `src/routes/admin/settings.rs`: Chat/AI configuration API; `src/routes/admin/advertising.rs`: separate ad-settings API guarded by `extensions.manage`.
+- `src/routes/client/advertising.rs`: returns only public, enabled banner configuration to authenticated users. It does not require Chat permissions.
+- `src/routes/client/conversations.rs` and `src/routes/client/conversation/`: chat creation, message history, AI tools, and power-action confirmation.
+- `frontend/src/index.ts`: global widget/banner and account/admin route registration.
+- `frontend/src/ChatWidget.tsx`: direct/group/AI chat UI, onboarding, slash commands, and status view.
+- `frontend/src/AdvertisingBanner.tsx` and `AdvertisingSettingsPage.tsx`: global ad placements and their separate Admin → Advertising page. Chat configuration remains in `ConfigurationPage.tsx`.
+- `frontend/src/lib/schemas.ts` and `frontend/src/api/`: API validation, serialization, and frontend request helpers.
+- `migrations/`: PostgreSQL schema changes; use reversible `up.sql` and `down.sql` migrations.
+
+## Local development and checks
+
+- Develop against a matching Calagopus Panel `1.2.5` checkout; extension frontend imports use the Panel's `shared` package and `@/` aliases.
+- The Panel frontend requires Node.js `>=24` and pnpm `>=11`. Install/build from the Panel checkout's `frontend/` directory before building Rust.
+- Standard local preflight: `pnpm install`, `pnpm build:fast`, then `cargo build --profile heavy-release --package com_calagopus_chat` from the Panel root. CI runs `pnpm build:ci` and builds against `release-1.2.5`.
+- Do not report a build/test as passing unless it actually ran. If Node, pnpm, Cargo, or Rust are missing, report that and continue with static checks only.
+
+### Product and security invariants
+
+- Private AI conversations and AI-enabled groups are distinct. In AI groups the assistant replies only to explicit `@AI` mentions; group server information may only be shared when every member can access the server.
+- Provider and Panel API keys stay server-side/encrypted and are never included in model prompts or activity-log payloads. Server start/stop/restart requires the caller's own Panel permission, the configured control-key permission cap, and explicit in-chat confirmation.
+- `/status` calls the authenticated Panel Client API directly and must not make an AI-provider request.
+- Direct chats are unique per user pair. Selecting the same person reopens that pair's existing thread; do not create duplicate direct threads.
+- Advertising has four independent placements (`top`, `bottom`, `left`, `right`) and an `all`/`dashboard` scope. Custom image/link creatives and sandboxed HTTPS iframe URLs are supported. Google AdSense's script-based embed is not supported by this CSP-safe implementation; providers must supply an embeddable iframe URL. Do not add raw HTML or scripts, `allow-same-origin`, or Panel-CSP workarounds. The iframe mode intentionally cannot access Panel storage or navigate the top-level Panel page; some ad providers may therefore be incompatible.
+- Keep user-visible advertising opt-in by default. Validate all externally loaded URLs as HTTPS on the backend, mark outbound links `rel="sponsored noopener noreferrer"`, and do not send ad settings/content to the AI provider.
 
 ## Extension versioning
 
@@ -59,3 +95,11 @@ panel-rs extensions export com.calagopus.chat
 ```
 
 It writes `exported-extensions/com_calagopus_chat.c7s.zip`. See the [official extension release guide](https://calagopus.com/docs/panel/extensions/getting-your-extension-ready) for pre-export checks and details.
+
+## Automatic commit policy
+
+- After completing a requested implementation or documentation task, automatically create a Git commit unless the user says not to. Do not ask for separate commit approval.
+- Before staging, inspect `git status` and the diff. Stage only files changed for the current task; never stage unrelated or pre-existing user changes wholesale.
+- Use a concise Conventional Commit subject (`feat:`, `fix:`, `docs:`, `chore:`, etc.). Do not amend existing commits, force-move tags, or push commits unless the user explicitly asks.
+- If the workspace is not a Git repository, Git is unavailable, identity is not configured, or the change cannot be isolated from unrelated work, do not fabricate a commit or use destructive workarounds. Report why no commit was created.
+- Run the relevant formatter/tests/build before committing when available. If tools are unavailable, state that in the final report; do not claim checks passed.
