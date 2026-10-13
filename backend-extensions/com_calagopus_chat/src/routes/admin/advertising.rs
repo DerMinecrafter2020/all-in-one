@@ -13,18 +13,8 @@ mod get {
     use super::*;
 
     #[derive(ToSchema, Serialize)]
-    struct SettingsResponse {
-        enabled: bool,
-        mode: String,
-        custom_ad_image_url: String,
-        custom_ad_target_url: String,
-        custom_ad_alt_text: String,
-        custom_ad_iframe_url: String,
-    }
-
-    #[derive(ToSchema, Serialize)]
     struct Response {
-        settings: SettingsResponse,
+        settings: crate::settings::AdvertisingSettings,
     }
 
     #[utoipa::path(get, path = "/", responses(
@@ -35,14 +25,7 @@ mod get {
 
         let settings = crate::settings::load(&state.0).await?;
         ApiResponse::new_serialized(Response {
-            settings: SettingsResponse {
-                enabled: settings.advertising_enabled,
-                mode: settings.advertising_mode.to_string(),
-                custom_ad_image_url: settings.custom_ad_image_url.to_string(),
-                custom_ad_target_url: settings.custom_ad_target_url.to_string(),
-                custom_ad_alt_text: settings.custom_ad_alt_text.to_string(),
-                custom_ad_iframe_url: settings.custom_ad_iframe_url.to_string(),
-            },
+            settings: settings.advertising,
         })
         .ok()
     }
@@ -50,15 +33,12 @@ mod get {
 
 mod put {
     use super::*;
+    use crate::settings::{AdvertisingSettings, AdvertisingSlotSettings, AdvertisingSlots};
 
     #[derive(ToSchema, Deserialize)]
-    struct PayloadData {
-        enabled: bool,
-        mode: String,
-        custom_ad_image_url: String,
-        custom_ad_target_url: String,
-        custom_ad_alt_text: String,
-        custom_ad_iframe_url: String,
+    pub struct PayloadData {
+        scope: String,
+        slots: AdvertisingSlots,
     }
 
     #[derive(ToSchema, Serialize)]
@@ -73,6 +53,44 @@ mod put {
             && url.host_str().is_some()
             && url.username().is_empty()
             && url.password().is_none()
+    }
+
+    fn validate_slot(slot: &mut AdvertisingSlotSettings) -> bool {
+        let mode = slot.mode.trim().to_string();
+        if !matches!(mode.as_str(), "custom_banner" | "sandboxed_iframe")
+            || !(1..=2000).contains(&slot.width)
+            || !(1..=2000).contains(&slot.height)
+        {
+            return false;
+        }
+
+        slot.mode = mode.into();
+        slot.custom_ad_image_url = slot.custom_ad_image_url.trim().into();
+        slot.custom_ad_target_url = slot.custom_ad_target_url.trim().into();
+        slot.custom_ad_iframe_url = slot.custom_ad_iframe_url.trim().into();
+        slot.custom_ad_alt_text = slot.custom_ad_alt_text.trim().into();
+
+        if slot.custom_ad_image_url.len() > 512
+            || slot.custom_ad_target_url.len() > 512
+            || slot.custom_ad_iframe_url.len() > 512
+            || slot.custom_ad_alt_text.chars().count() > 120
+        {
+            return false;
+        }
+
+        if !slot.enabled {
+            return true;
+        }
+
+        match slot.mode.as_str() {
+            "custom_banner" => {
+                is_https_url(slot.custom_ad_image_url.as_str())
+                    && is_https_url(slot.custom_ad_target_url.as_str())
+                    && !slot.custom_ad_alt_text.is_empty()
+            }
+            "sandboxed_iframe" => is_https_url(slot.custom_ad_iframe_url.as_str()),
+            _ => false,
+        }
     }
 
     fn invalid_settings() -> ApiResponse {
@@ -91,44 +109,26 @@ mod put {
     ) -> ApiResponseResult {
         permissions.has_admin_permission("extensions.manage")?;
 
-        let mode = data.mode.trim();
-        let custom_ad_image_url = data.custom_ad_image_url.trim();
-        let custom_ad_target_url = data.custom_ad_target_url.trim();
-        let custom_ad_alt_text = data.custom_ad_alt_text.trim();
-        let custom_ad_iframe_url = data.custom_ad_iframe_url.trim();
-
-        let mode_is_valid = matches!(mode, "custom_banner" | "sandboxed_iframe");
-        let values_are_within_limits = mode.len() <= 32
-            && custom_ad_image_url.len() <= 512
-            && custom_ad_target_url.len() <= 512
-            && custom_ad_alt_text.chars().count() <= 120
-            && custom_ad_iframe_url.len() <= 512;
-        let banner_settings_are_valid = !data.enabled
-            || match mode {
-                "custom_banner" => {
-                    is_https_url(custom_ad_image_url)
-                        && is_https_url(custom_ad_target_url)
-                        && !custom_ad_alt_text.is_empty()
-                }
-                "sandboxed_iframe" => is_https_url(custom_ad_iframe_url),
-                _ => false,
-            };
-
-        if !mode_is_valid || !values_are_within_limits || !banner_settings_are_valid {
+        let scope = data.scope.trim().to_string();
+        let mut slots = data.slots;
+        if !matches!(scope.as_str(), "all" | "dashboard")
+            || !validate_slot(&mut slots.top)
+            || !validate_slot(&mut slots.bottom)
+            || !validate_slot(&mut slots.left)
+            || !validate_slot(&mut slots.right)
+        {
             return Err(invalid_settings());
         }
 
+        let advertising = AdvertisingSettings {
+            scope: scope.clone().into(),
+            slots,
+        };
         let mut settings = state.settings.get_mut().await?;
         {
             let extension_settings: &mut crate::settings::ExtensionSettingsData =
                 settings.find_mut_extension_settings()?;
-
-            extension_settings.advertising_enabled = data.enabled;
-            extension_settings.advertising_mode = mode.into();
-            extension_settings.custom_ad_image_url = custom_ad_image_url.into();
-            extension_settings.custom_ad_target_url = custom_ad_target_url.into();
-            extension_settings.custom_ad_alt_text = custom_ad_alt_text.into();
-            extension_settings.custom_ad_iframe_url = custom_ad_iframe_url.into();
+            extension_settings.advertising = advertising.clone();
         }
 
         settings.save().await?;
@@ -138,8 +138,13 @@ mod put {
                 "settings:extensions:update",
                 serde_json::json!({
                     "extension": "com.calagopus.chat",
-                    "advertising_enabled": data.enabled,
-                    "advertising_mode": mode,
+                    "advertising_scope": scope,
+                    "enabled_slots": {
+                        "top": advertising.slots.top.enabled,
+                        "bottom": advertising.slots.bottom.enabled,
+                        "left": advertising.slots.left.enabled,
+                        "right": advertising.slots.right.enabled,
+                    },
                 }),
             )
             .await;

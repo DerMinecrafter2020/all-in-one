@@ -694,52 +694,68 @@
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
-.calagopus-ad-banner-slot {
+.calagopus-ad-placement {
   box-sizing: border-box;
   display: flex;
-  width: 100%;
-  justify-content: center;
-  padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
-}
-
-.calagopus-ad-banner-inner {
-  position: relative;
-  display: flex;
-  width: min(100%, 970px);
-  min-height: 50px;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
 }
 
-.calagopus-ad-banner-label {
+.calagopus-ad-placement-top,
+.calagopus-ad-placement-bottom {
+  margin: 8px auto;
+  padding: 8px 0;
+}
+
+.calagopus-ad-placement-left,
+.calagopus-ad-placement-right {
+  position: fixed;
+  top: 50%;
+  z-index: 80;
+  padding: 8px 0;
+  transform: translateY(-50%);
+}
+
+.calagopus-ad-placement-left {
+  left: 8px;
+}
+
+.calagopus-ad-placement-right {
+  right: 8px;
+}
+
+.calagopus-ad-placement-label {
   align-self: flex-end;
   color: var(--mantine-color-dimmed);
   font-size: 10px;
   line-height: 1.2;
 }
 
-.calagopus-custom-ad-link {
+.calagopus-ad-placement-link {
   display: flex;
   width: 100%;
-  max-height: 90px;
+  height: calc(100% - 14px);
   align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: var(--mantine-radius-sm);
 }
 
-.calagopus-custom-ad-image {
+.calagopus-ad-placement-image,
+.calagopus-ad-placement-frame {
   display: block;
   width: 100%;
-  max-height: 90px;
+  height: 100%;
   object-fit: contain;
 }
 
-.calagopus-ad-iframe {
-  display: block;
-  width: 100%;
-  height: 90px;
+.calagopus-ad-placement-frame {
+  flex: 0 0 auto;
+  height: calc(100% - 14px);
   border: 0;
   border-radius: var(--mantine-radius-sm);
 }

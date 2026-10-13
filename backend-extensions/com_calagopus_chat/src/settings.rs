@@ -12,6 +12,104 @@ use url::Url;
 
 #[derive(Clone, ToSchema, Serialize, Deserialize)]
 #[serde(default)]
+pub struct AdvertisingSlotSettings {
+    pub enabled: bool,
+    pub mode: compact_str::CompactString,
+    pub width: u16,
+    pub height: u16,
+    pub custom_ad_image_url: compact_str::CompactString,
+    pub custom_ad_target_url: compact_str::CompactString,
+    pub custom_ad_alt_text: compact_str::CompactString,
+    pub custom_ad_iframe_url: compact_str::CompactString,
+}
+
+impl AdvertisingSlotSettings {
+    fn banner_default() -> Self {
+        Self {
+            width: 728,
+            height: 90,
+            ..Self::default()
+        }
+    }
+
+    fn side_default() -> Self {
+        Self {
+            width: 160,
+            height: 600,
+            ..Self::default()
+        }
+    }
+
+    pub fn is_available(&self) -> bool {
+        if !self.enabled || !(1..=2000).contains(&self.width) || !(1..=2000).contains(&self.height) {
+            return false;
+        }
+
+        match self.mode.as_str() {
+            "custom_banner" => {
+                is_https_url(self.custom_ad_image_url.trim())
+                    && is_https_url(self.custom_ad_target_url.trim())
+                    && !self.custom_ad_alt_text.trim().is_empty()
+            }
+            "sandboxed_iframe" => is_https_url(self.custom_ad_iframe_url.trim()),
+            _ => false,
+        }
+    }
+}
+
+impl Default for AdvertisingSlotSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            mode: "custom_banner".into(),
+            width: 728,
+            height: 90,
+            custom_ad_image_url: compact_str::CompactString::default(),
+            custom_ad_target_url: compact_str::CompactString::default(),
+            custom_ad_alt_text: compact_str::CompactString::default(),
+            custom_ad_iframe_url: compact_str::CompactString::default(),
+        }
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AdvertisingSlots {
+    pub top: AdvertisingSlotSettings,
+    pub bottom: AdvertisingSlotSettings,
+    pub left: AdvertisingSlotSettings,
+    pub right: AdvertisingSlotSettings,
+}
+
+impl Default for AdvertisingSlots {
+    fn default() -> Self {
+        Self {
+            top: AdvertisingSlotSettings::banner_default(),
+            bottom: AdvertisingSlotSettings::banner_default(),
+            left: AdvertisingSlotSettings::side_default(),
+            right: AdvertisingSlotSettings::side_default(),
+        }
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AdvertisingSettings {
+    pub scope: compact_str::CompactString,
+    pub slots: AdvertisingSlots,
+}
+
+impl Default for AdvertisingSettings {
+    fn default() -> Self {
+        Self {
+            scope: "all".into(),
+            slots: AdvertisingSlots::default(),
+        }
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ExtensionSettingsData {
     pub ai_enabled: bool,
     pub ai_provider: compact_str::CompactString,
@@ -23,12 +121,7 @@ pub struct ExtensionSettingsData {
     pub ai_server_info_enabled: bool,
     pub ai_server_power_enabled: bool,
     pub floating_widget_enabled: bool,
-    pub advertising_enabled: bool,
-    pub advertising_mode: compact_str::CompactString,
-    pub custom_ad_image_url: compact_str::CompactString,
-    pub custom_ad_target_url: compact_str::CompactString,
-    pub custom_ad_alt_text: compact_str::CompactString,
-    pub custom_ad_iframe_url: compact_str::CompactString,
+    pub advertising: AdvertisingSettings,
 }
 
 impl Default for ExtensionSettingsData {
@@ -45,12 +138,7 @@ impl Default for ExtensionSettingsData {
             ai_server_info_enabled: false,
             ai_server_power_enabled: false,
             floating_widget_enabled: true,
-            advertising_enabled: false,
-            advertising_mode: "custom_banner".into(),
-            custom_ad_image_url: compact_str::CompactString::default(),
-            custom_ad_target_url: compact_str::CompactString::default(),
-            custom_ad_alt_text: compact_str::CompactString::default(),
-            custom_ad_iframe_url: compact_str::CompactString::default(),
+            advertising: AdvertisingSettings::default(),
         }
     }
 }
@@ -71,21 +159,6 @@ impl ExtensionSettingsData {
             && !self.ai_base_url.trim().is_empty()
     }
 
-    pub fn advertising_available(&self) -> bool {
-        if !self.advertising_enabled {
-            return false;
-        }
-
-        match self.advertising_mode.as_str() {
-            "custom_banner" => {
-                is_https_url(self.custom_ad_image_url.trim())
-                    && is_https_url(self.custom_ad_target_url.trim())
-                    && !self.custom_ad_alt_text.trim().is_empty()
-            }
-            "sandboxed_iframe" => is_https_url(self.custom_ad_iframe_url.trim()),
-            _ => false,
-        }
-    }
 }
 
 fn is_https_url(value: &str) -> bool {
@@ -124,14 +197,9 @@ impl SettingsSerializeExt for ExtensionSettingsData {
                 self.floating_widget_enabled.to_compact_string(),
             )
             .write_raw_setting(
-                "advertising_enabled",
-                self.advertising_enabled.to_compact_string(),
-            )
-            .write_raw_setting("advertising_mode", self.advertising_mode.clone())
-            .write_raw_setting("custom_ad_image_url", self.custom_ad_image_url.clone())
-            .write_raw_setting("custom_ad_target_url", self.custom_ad_target_url.clone())
-            .write_raw_setting("custom_ad_alt_text", self.custom_ad_alt_text.clone())
-            .write_raw_setting("custom_ad_iframe_url", self.custom_ad_iframe_url.clone());
+                "advertising_config",
+                serde_json::to_string(&self.advertising)?,
+            );
 
         let serializer = serializer
             .write_raw_encrypted_setting("ai_api_key", self.ai_api_key.clone())
@@ -162,6 +230,34 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
             .read_raw_encrypted_setting("ai_server_control_api_key")
             .await?
             .unwrap_or_default();
+
+        let advertising = deserializer
+            .take_raw_setting("advertising_config")
+            .and_then(|value| serde_json::from_str(value.as_str()).ok())
+            .unwrap_or_else(|| {
+                let mut advertising = AdvertisingSettings::default();
+                advertising.slots.top.enabled = deserializer
+                    .take_raw_setting("advertising_enabled")
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(false);
+                advertising.slots.top.mode = deserializer
+                    .take_raw_setting("advertising_mode")
+                    .filter(|value| matches!(value.as_str(), "custom_banner" | "sandboxed_iframe"))
+                    .unwrap_or_else(|| "custom_banner".into());
+                advertising.slots.top.custom_ad_image_url = deserializer
+                    .take_raw_setting("custom_ad_image_url")
+                    .unwrap_or_default();
+                advertising.slots.top.custom_ad_target_url = deserializer
+                    .take_raw_setting("custom_ad_target_url")
+                    .unwrap_or_default();
+                advertising.slots.top.custom_ad_alt_text = deserializer
+                    .take_raw_setting("custom_ad_alt_text")
+                    .unwrap_or_default();
+                advertising.slots.top.custom_ad_iframe_url = deserializer
+                    .take_raw_setting("custom_ad_iframe_url")
+                    .unwrap_or_default();
+                advertising
+            });
 
         Ok(Box::new(ExtensionSettingsData {
             ai_enabled: deserializer
@@ -196,26 +292,7 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
                 .take_raw_setting("floating_widget_enabled")
                 .and_then(|value| value.parse().ok())
                 .unwrap_or(true),
-            advertising_enabled: deserializer
-                .take_raw_setting("advertising_enabled")
-                .and_then(|value| value.parse().ok())
-                .unwrap_or(false),
-            advertising_mode: deserializer
-                .take_raw_setting("advertising_mode")
-                .filter(|value| matches!(value.as_str(), "custom_banner" | "sandboxed_iframe"))
-                .unwrap_or_else(|| "custom_banner".into()),
-            custom_ad_image_url: deserializer
-                .take_raw_setting("custom_ad_image_url")
-                .unwrap_or_default(),
-            custom_ad_target_url: deserializer
-                .take_raw_setting("custom_ad_target_url")
-                .unwrap_or_default(),
-            custom_ad_alt_text: deserializer
-                .take_raw_setting("custom_ad_alt_text")
-                .unwrap_or_default(),
-            custom_ad_iframe_url: deserializer
-                .take_raw_setting("custom_ad_iframe_url")
-                .unwrap_or_default(),
+            advertising,
         }))
     }
 }

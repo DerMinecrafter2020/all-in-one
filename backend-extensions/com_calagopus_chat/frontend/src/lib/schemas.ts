@@ -139,21 +139,33 @@ export const adminSettingsResponseSchema = z.object({
 });
 
 export const advertisingModeSchema = z.enum(['custom_banner', 'sandboxed_iframe']);
+export const advertisingScopeSchema = z.enum(['all', 'dashboard']);
+export const advertisingSlotNameSchema = z.enum(['top', 'bottom', 'left', 'right']);
 
-export const advertisingSettingsSchema = z.object({
+export const advertisingSlotSchema = z.object({
   enabled: z.boolean(),
   mode: advertisingModeSchema,
+  width: z.number().int().min(1).max(2000),
+  height: z.number().int().min(1).max(2000),
   customAdImageUrl: z.string().max(512),
   customAdTargetUrl: z.string().max(512),
   customAdAltText: z.string().max(120),
   customAdIframeUrl: z.string().max(512),
 });
 
+export const advertisingSettingsSchema = z.object({
+  scope: advertisingScopeSchema,
+  slots: z.object({
+    top: advertisingSlotSchema,
+    bottom: advertisingSlotSchema,
+    left: advertisingSlotSchema,
+    right: advertisingSlotSchema,
+  }),
+});
+
 export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRefine(
   (settings, context) => {
-    if (!settings.enabled) return;
-
-    const validateHttpsUrl = (field: string, value: string) => {
+    const validateHttpsUrl = (path: (string | number)[], value: string) => {
       let validHttpsUrl = false;
       try {
         const url = new URL(value);
@@ -165,26 +177,31 @@ export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRe
       if (!validHttpsUrl) {
         context.addIssue({
           code: 'custom',
-          path: [field],
+          path,
           message: 'Enter a valid HTTPS URL.',
         });
       }
     };
 
-    if (settings.mode === 'sandboxed_iframe') {
-      validateHttpsUrl('customAdIframeUrl', settings.customAdIframeUrl);
-      return;
-    }
+    for (const slotName of advertisingSlotNameSchema.options) {
+      const slot = settings.slots[slotName];
+      if (!slot.enabled) continue;
 
-    validateHttpsUrl('customAdImageUrl', settings.customAdImageUrl);
-    validateHttpsUrl('customAdTargetUrl', settings.customAdTargetUrl);
+      if (slot.mode === 'sandboxed_iframe') {
+        validateHttpsUrl(['slots', slotName, 'customAdIframeUrl'], slot.customAdIframeUrl);
+        continue;
+      }
 
-    if (!settings.customAdAltText.trim()) {
-      context.addIssue({
-        code: 'custom',
-        path: ['customAdAltText'],
-        message: 'Alternative text is required for the banner image.',
-      });
+      validateHttpsUrl(['slots', slotName, 'customAdImageUrl'], slot.customAdImageUrl);
+      validateHttpsUrl(['slots', slotName, 'customAdTargetUrl'], slot.customAdTargetUrl);
+
+      if (!slot.customAdAltText.trim()) {
+        context.addIssue({
+          code: 'custom',
+          path: ['slots', slotName, 'customAdAltText'],
+          message: 'Alternative text is required for the banner image.',
+        });
+      }
     }
   },
 );
@@ -230,5 +247,8 @@ export type ChatUser = z.infer<typeof userSummarySchema>;
 export type ProviderModelsRequest = z.infer<typeof providerModelsRequestSchema>;
 export type UpdateAdminSettings = z.infer<typeof updateAdminSettingsSchema>;
 export type AdvertisingMode = z.infer<typeof advertisingModeSchema>;
+export type AdvertisingScope = z.infer<typeof advertisingScopeSchema>;
+export type AdvertisingSlotName = z.infer<typeof advertisingSlotNameSchema>;
+export type AdvertisingSlotSettings = z.infer<typeof advertisingSlotSchema>;
 export type AdvertisingSettings = z.infer<typeof advertisingSettingsSchema>;
 export type UpdateAdvertisingSettings = z.infer<typeof updateAdvertisingSettingsSchema>;

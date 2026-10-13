@@ -1,5 +1,8 @@
 # Calagopus Chat changelog
 
+## 0.2.5 — 2026-10-13
+- Ported four independent top, bottom, left, and right advertising placements with per-slot sizes and dashboard/all-page scope.
+
 ## 0.2.4 — 2026-10-13
 - Added sandboxed HTTPS iframe ads for providers that supply an embeddable ad URL, without relaxing the Panel CSP.
 
