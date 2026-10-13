@@ -1,8 +1,10 @@
-import { faComments } from '@fortawesome/free-solid-svg-icons';
+import { faBullhorn, faComments } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { createElement, type FC } from 'react';
 import { Extension, type ExtensionContext } from 'shared';
 import './app.css';
+import AdvertisingBanner from './AdvertisingBanner.tsx';
+import AdvertisingSettingsPage from './AdvertisingSettingsPage.tsx';
 import ChatPage from './ChatPage.tsx';
 import ChatWidget from './ChatWidget.tsx';
 import ConfigurationPage from './ConfigurationPage.tsx';
@@ -13,6 +15,7 @@ class CalagopusChatExtension extends Extension {
   public cardIcon = createElement(FontAwesomeIcon, { icon: faComments });
 
   public initialize(ctx: ExtensionContext): void {
+    ctx.extensionRegistry.pages.global.prependComponent(AdvertisingBanner);
     ctx.extensionRegistry.pages.global.appendComponent(ChatWidget);
     ctx.extensionRegistry.routes.addAccountRoute({
       name: () => getExtTranslations().t('chat.sidebarTitle', {}),
@@ -26,6 +29,15 @@ class CalagopusChatExtension extends Extension {
       path: '/calagopus-chat',
       icon: faComments,
       element: ConfigurationPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('ads.sidebarTitle', {}),
+      path: '/calagopus-ads',
+      icon: faBullhorn,
+      element: AdvertisingSettingsPage,
       permission: 'extensions.manage',
       category: 'system',
       exact: true,

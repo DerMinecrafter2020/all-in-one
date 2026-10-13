@@ -170,6 +170,23 @@ const translations = defineTranslations({
       changelogTitle: 'Changelog',
       changelogDescription: 'Recent changes to Calagopus Chat.',
     },
+    ads: {
+      sidebarTitle: 'Advertising',
+      title: 'Advertising banners',
+      description: 'Configure a custom banner shown above authenticated Panel pages. These settings are separate from Chat settings.',
+      loading: 'Loading advertising settings…',
+      enable: 'Enable advertising banners',
+      enableDescription: 'Show the configured banner across authenticated Panel pages.',
+      customImageUrl: 'Banner image URL (HTTPS)',
+      customTargetUrl: 'Destination URL (HTTPS)',
+      customAltText: 'Image alternative text',
+      customHelp: 'Only HTTPS image and destination URLs are accepted. The link is marked as sponsored and opens in a new tab; arbitrary HTML and scripts are not allowed.',
+      privacyTitle: 'Privacy note',
+      privacyNotice: 'The configured image host receives the visitor’s image request and IP address. The image is loaded without a referrer. Disclose the banner in your privacy notice as required for your deployment.',
+      save: 'Save advertising settings',
+      settingsSaved: 'Advertising settings saved. Reload the Panel to apply them.',
+      bannerLabel: 'Advertisement',
+    },
   },
 });
 

@@ -138,6 +138,52 @@ export const adminSettingsResponseSchema = z.object({
   tokenUsage: tokenUsageSchema,
 });
 
+export const advertisingSettingsSchema = z.object({
+  enabled: z.boolean(),
+  customAdImageUrl: z.string().max(512),
+  customAdTargetUrl: z.string().max(512),
+  customAdAltText: z.string().max(120),
+});
+
+export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRefine(
+  (settings, context) => {
+    if (!settings.enabled) return;
+
+    for (const [field, value] of [
+      ['customAdImageUrl', settings.customAdImageUrl],
+      ['customAdTargetUrl', settings.customAdTargetUrl],
+    ] as const) {
+      let validHttpsUrl = false;
+      try {
+        const url = new URL(value);
+        validHttpsUrl =
+          url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;
+      } catch {
+        // The field-specific issue below reports invalid or non-HTTPS URLs.
+      }
+      if (!validHttpsUrl) {
+        context.addIssue({
+          code: 'custom',
+          path: [field],
+          message: 'Enter a valid HTTPS URL.',
+        });
+      }
+    }
+
+    if (!settings.customAdAltText.trim()) {
+      context.addIssue({
+        code: 'custom',
+        path: ['customAdAltText'],
+        message: 'Alternative text is required for the banner image.',
+      });
+    }
+  },
+);
+
+export const advertisingSettingsResponseSchema = z.object({
+  settings: advertisingSettingsSchema,
+});
+
 export const providerModelsRequestSchema = z.object({
   aiProvider: aiProviderSchema,
   aiBaseUrl: z.string().url().max(512),
@@ -174,3 +220,5 @@ export type ChatMessage = z.infer<typeof messageSchema>;
 export type ChatUser = z.infer<typeof userSummarySchema>;
 export type ProviderModelsRequest = z.infer<typeof providerModelsRequestSchema>;
 export type UpdateAdminSettings = z.infer<typeof updateAdminSettingsSchema>;
+export type AdvertisingSettings = z.infer<typeof advertisingSettingsSchema>;
+export type UpdateAdvertisingSettings = z.infer<typeof updateAdvertisingSettingsSchema>;

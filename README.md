@@ -10,6 +10,7 @@ A native Calagopus Panel extension that adds an always-available, theme-aware ch
 - Optional AI-enabled group chats that answer only when a member explicitly mentions `@AI`.
 - A first-use AI chat guide explaining privacy, safe use, and available chat commands.
 - A `/status` chat command with a searchable server picker that reads live status directly from the Panel without an AI-provider call.
+- Admin-configurable custom HTTPS image/link banners across authenticated Panel pages.
 - An animated typing indicator while AI responses are being prepared.
 - Remove a conversation from your own chat list without deleting it for other participants.
 - Conversation history and unread message counts persisted in PostgreSQL.
@@ -40,7 +41,7 @@ cd ..
 cargo build --profile heavy-release
 ```
 
-The extension targets Calagopus Panel `>=1.2.3`. Its frontend uses the official global page slot, an admin sidebar route, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations. The extension API and required dependencies are available in the official 1.2.3 release.
+The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate admin sidebar routes for Chat settings and Advertising, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
 
 ## Configure AI
 
@@ -53,6 +54,10 @@ The extension targets Calagopus Panel `>=1.2.3`. Its frontend uses the official 
 7. To enable server power actions, enter a separate Panel user API key whose owner can access the target servers and whose scopes include `control.start`, `control.stop`, and `control.restart`. Keep the server-information and power-action settings enabled as desired.
 
 OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use their native Messages and `generateContent` APIs. Server tools require a model that supports function calling. The AI can only see servers the current user can access. Start/stop/restart requests require both the caller's per-server permission and the configured Panel API key's scope, and are rechecked at confirmation. AI-enabled groups respond only when a user explicitly mentions `@AI`; the recent group conversation is then sent to the configured AI provider for context. Arbitrary console commands and file operations are not exposed. Token totals reflect only Calagopus Chat calls, using usage fields reported by the configured provider; they are not account-wide billing totals. Providers that omit usage details are excluded. Neither API key is returned by the admin settings endpoint; leave each field blank to preserve its saved key or select its **Remove** option to clear it.
+
+## Advertising banners
+
+Administrators configure custom HTTPS image/link banners on the separate **Admin → Advertising** page, not in Chat settings. Banners appear across authenticated Panel pages. Links are marked as sponsored and opened in a new tab; the extension does not accept arbitrary banner HTML or JavaScript or load an advertising-network script.
 
 ## Official documentation
 

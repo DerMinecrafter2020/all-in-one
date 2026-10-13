@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag to publish (for example v0.2.2)
+        description: Version tag to publish (for example v0.2.3)
         required: true
         type: string
 
@@ -102,8 +102,7 @@ jobs:
       fail-fast: false
       matrix:
         panel_ref:
-          - release-1.2.3
-          - release-1.2.4
+          - release-1.2.5
 
     steps:
       - name: Check out extension source
@@ -171,6 +170,7 @@ jobs:
         run: |
           set -euo pipefail
           cp -R backend-extensions/com_calagopus_chat panel/backend-extensions/com_calagopus_chat
+          (cd panel && git apply ../patches/calagopus-panel-1.2.5-csp-script-sources.patch)
           mkdir -p panel/frontend/extensions
           ln -s ../../backend-extensions/com_calagopus_chat/frontend \
             panel/frontend/extensions/com_calagopus_chat

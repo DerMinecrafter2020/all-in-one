@@ -1,5 +1,9 @@
 # Calagopus Chat changelog
 
+## 0.2.3 — 2026-10-13
+- Added a separate Advertising admin page and custom HTTPS image/link banners across authenticated Panel pages.
+- Upgraded the minimum supported Panel version to 1.2.5.
+
 ## 0.2.2 — 2026-10-07
 - Added a first-use AI chat guide covering privacy, server-data handling, confirmations, and chat commands.
 - Improved reopening a direct chat with the same person so the existing thread opens immediately.
