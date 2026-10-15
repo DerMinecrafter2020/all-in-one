@@ -1,5 +1,10 @@
 # Calagopus Chat changelog
 
+## 0.2.6 — 2026-10-15
+- Added a permission-gated server-tools page with Modrinth search and installers for server-side mods, plugins, and `.mrpack` modpacks.
+- Added confirmed Minecraft Java player actions (kick, ban, unban, and whitelist management) and online-player listing through the Panel WebSocket.
+- Kept existing server files intact during installs, added safe temporary modpack staging/cleanup, and left server loaders and startup commands unchanged.
+
 ## 0.2.5 — 2026-10-13
 - Ported four independent top, bottom, left, and right advertising placements with per-slot sizes and dashboard/all-page scope.
 

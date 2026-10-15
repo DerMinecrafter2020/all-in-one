@@ -11,6 +11,8 @@ A native Calagopus Panel extension that adds an always-available, theme-aware ch
 - A first-use AI chat guide explaining privacy, safe use, and available chat commands.
 - A `/status` chat command with a searchable server picker that reads live status directly from the Panel without an AI-provider call.
 - Admin-configurable top, bottom, left, and right custom image/link or sandboxed iframe banners across authenticated Panel pages.
+- A server-tools page with Modrinth search and installers for modpacks, server-side mods, and plugins, plus a player manager for online players and kick/ban/unban/whitelist actions. Player actions require `control.console`; reading the online list additionally requires `control.read-console`.
+- File installs follow the server's Panel permissions, avoid overwriting existing files, and require the Java server to be stopped. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command.
 - An animated typing indicator while AI responses are being prepared.
 - Remove a conversation from your own chat list without deleting it for other participants.
 - Conversation history and unread message counts persisted in PostgreSQL.
@@ -41,7 +43,7 @@ cd ..
 cargo build --profile heavy-release
 ```
 
-The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate admin sidebar routes for Chat settings and Advertising, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
+The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate admin sidebar routes for Chat settings and Advertising, a permission-gated server-tools route, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
 
 ## Configure AI
 
@@ -53,7 +55,7 @@ The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official 
 6. Adjust the system prompt and enable AI chat.
 7. To enable server power actions, enter a separate Panel user API key whose owner can access the target servers and whose scopes include `control.start`, `control.stop`, and `control.restart`. Keep the server-information and power-action settings enabled as desired.
 
-OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use their native Messages and `generateContent` APIs. Server tools require a model that supports function calling. The AI can only see servers the current user can access. Start/stop/restart requests require both the caller's per-server permission and the configured Panel API key's scope, and are rechecked at confirmation. AI-enabled groups respond only when a user explicitly mentions `@AI`; the recent group conversation is then sent to the configured AI provider for context. Arbitrary console commands and file operations are not exposed. Token totals reflect only Calagopus Chat calls, using usage fields reported by the configured provider; they are not account-wide billing totals. Providers that omit usage details are excluded. Neither API key is returned by the admin settings endpoint; leave each field blank to preserve its saved key or select its **Remove** option to clear it.
+OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use their native Messages and `generateContent` APIs. AI server tools require a model that supports function calling. The AI can only see servers the current user can access. Start/stop/restart requests require both the caller's per-server permission and the configured Panel API key's scope, and are rechecked at confirmation. AI-enabled groups respond only when a user explicitly mentions `@AI`; the recent group conversation is then sent to the configured AI provider for context. The AI cannot invoke arbitrary console commands or file operations; the separate Server tools page exposes only fixed player-management commands and permission-checked installers. Token totals reflect only Calagopus Chat calls, using usage fields reported by the configured provider; they are not account-wide billing totals. Providers that omit usage details are excluded. Neither API key is returned by the admin settings endpoint; leave each field blank to preserve its saved key or select its **Remove** option to clear it.
 
 ## Advertising banners
 

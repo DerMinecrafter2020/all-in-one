@@ -3,8 +3,8 @@
 ## Project overview
 
 - This repository contains the Calagopus Chat extension source, not the Panel itself. The extension package is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat/`.
-- Current extension version: `0.2.5`. Minimum supported Calagopus Panel version: `1.2.5` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
-- The extension provides direct/group/AI chat, server information and confirmed power actions, a first-use AI guide, `/status`, and advertising placements.
+- Current extension version: `0.2.6`. Minimum supported Calagopus Panel version: `1.2.5` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- The extension provides direct/group/AI chat, server information and confirmed power actions, a first-use AI guide, `/status`, advertising placements, and permission-gated Minecraft server tools.
 - The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here and in `.github/workflows/release.yml`.
 
 ## Extension identity and layout
@@ -28,6 +28,7 @@
 - `frontend/src/index.ts`: global widget/banner and account/admin route registration.
 - `frontend/src/ChatWidget.tsx`: direct/group/AI chat UI, onboarding, slash commands, and status view.
 - `frontend/src/AdvertisingBanner.tsx` and `AdvertisingSettingsPage.tsx`: global ad placements and their separate Admin → Advertising page. Chat configuration remains in `ConfigurationPage.tsx`.
+- `src/routes/client/modrinth.rs`, `frontend/src/ServerToolsPage.tsx`, `ModrinthManager.tsx`, and `PlayerManager.tsx`: authenticated Modrinth search/version proxy and per-server modpack/mod/plugin/player tools.
 - `frontend/src/lib/schemas.ts` and `frontend/src/api/`: API validation, serialization, and frontend request helpers.
 - `migrations/`: PostgreSQL schema changes; use reversible `up.sql` and `down.sql` migrations.
 
@@ -46,6 +47,7 @@
 - Direct chats are unique per user pair. Selecting the same person reopens that pair's existing thread; do not create duplicate direct threads.
 - Advertising has four independent placements (`top`, `bottom`, `left`, `right`) and an `all`/`dashboard` scope. Custom image/link creatives and sandboxed HTTPS iframe URLs are supported. Google AdSense's script-based embed is not supported by this CSP-safe implementation; providers must supply an embeddable iframe URL. Do not add raw HTML or scripts, `allow-same-origin`, or Panel-CSP workarounds. The iframe mode intentionally cannot access Panel storage or navigate the top-level Panel page; some ad providers may therefore be incompatible.
 - Keep user-visible advertising opt-in by default. Validate all externally loaded URLs as HTTPS on the backend, mark outbound links `rel="sponsored noopener noreferrer"`, and do not send ad settings/content to the AI provider.
+- Server installers must use Calagopus file APIs and the caller's own server permissions, never overwrite existing files, accept only allowlisted HTTPS Modrinth file hosts, and avoid changing server loaders/startup commands. Player management is limited to validated fixed Minecraft Java commands and requires `control.console`; reading online players also requires `control.read-console`.
 
 ## Extension versioning
 
@@ -53,12 +55,12 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.2.5`)
+- The Git tag, prefixed with `v` (for example, `v0.2.6`)
 
-Start from the current version, `0.2.5`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.2.6`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
-0.2.5 → 0.2.6 → … → 0.2.10 → 0.3.0
+0.2.6 → 0.2.7 → … → 0.2.10 → 0.3.0
 0.10.10 → 1.0.0
 ```
 
@@ -80,7 +82,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download the `.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release Calagopus Chat → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.5`.
+To start a release manually, use **Actions → Release Calagopus Chat → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.6`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 

@@ -2,7 +2,7 @@
 name = "com_calagopus_chat"
 description = "A themed user and AI chat extension for the Calagopus Panel."
 authors = ["Calagopus Chat contributors"]
-version = "0.2.5"
+version = "0.2.6"
 edition = { workspace = true }
 license = "GPL-3.0-or-later"
 

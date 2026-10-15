@@ -1,4 +1,4 @@
-import { faBullhorn, faComments } from '@fortawesome/free-solid-svg-icons';
+import { faBullhorn, faComments, faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { createElement, type FC } from 'react';
 import { Extension, type ExtensionContext } from 'shared';
@@ -8,6 +8,7 @@ import AdvertisingSettingsPage from './AdvertisingSettingsPage.tsx';
 import ChatPage from './ChatPage.tsx';
 import ChatWidget from './ChatWidget.tsx';
 import ConfigurationPage from './ConfigurationPage.tsx';
+import ServerToolsPage from './ServerToolsPage.tsx';
 import { getExtTranslations } from './translations.ts';
 
 class CalagopusChatExtension extends Extension {
@@ -40,6 +41,14 @@ class CalagopusChatExtension extends Extension {
       element: AdvertisingSettingsPage,
       permission: 'extensions.manage',
       category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addServerRoute({
+      name: () => getExtTranslations().t('tools.sidebarTitle', {}),
+      path: '/calagopus-tools',
+      icon: faScrewdriverWrench,
+      element: ServerToolsPage,
+      permission: ['files.read', 'files.create', 'control.read-console', 'control.console'],
       exact: true,
     });
   }
