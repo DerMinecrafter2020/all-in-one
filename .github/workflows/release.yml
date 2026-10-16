@@ -330,6 +330,8 @@ jobs:
           cp -R "$source_dir/src" "$stage_dir/backend/src"
           cp "$source_dir/frontend/package.json" "$stage_dir/frontend/package.json"
           cp -R "$source_dir/frontend/src" "$stage_dir/frontend/src"
+          mkdir -p "$stage_dir/frontend/public"
+          cp -R "$source_dir/frontend/public/translations" "$stage_dir/frontend/public/translations"
           cp -R "$source_dir/migrations/." "$stage_dir/migrations/"
 
           rm -f "$archive"
@@ -356,6 +358,7 @@ jobs:
               "frontend/src/",
               "frontend/package.json",
               "frontend/src/index.ts",
+              "frontend/public/translations/de/com.calagopus.chat.json",
               "migrations/",
           }
           missing = sorted(required - names)

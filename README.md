@@ -11,9 +11,9 @@ A native Calagopus Panel extension that combines a theme-aware chat widget with 
 - A first-use AI chat guide explaining privacy, safe use, and available chat commands.
 - A `/status` chat command with a searchable server picker that reads live status directly from the Panel without an AI-provider call.
 - Admin-configurable top, bottom, left, and right custom image/link or sandboxed iframe banners across authenticated Panel pages.
-- Separate Modrinth modpack, mod, and plugin pages load popular projects automatically, offer version selection, and appear only for compatible Minecraft Eggs; administrators can toggle each page in All-in-One settings.
+- Separate Modrinth modpack, mod, and plugin pages load popular projects automatically, offer version selection, and appear only for compatible Minecraft Eggs. Each function has its own Admin sidebar settings page.
 - The Minecraft player manager shows online, banned, whitelisted, and opped players. Inventory/TPS use server commands where supported, ping is shown when available, and the configured player limit comes from `server.properties` or the server list response.
-- File installs follow the server's Panel permissions, avoid overwriting existing files, and require the Java server to be stopped. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command. Saving `server.properties` asks whether to start or restart the server.
+- File installs follow the server's Panel permissions, avoid overwriting existing files, and require the Java server to be stopped. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command. The `server.properties` editor presents each property in its own field, preserves comments and unknown lines, and asks whether to start or restart after saving.
 - An animated typing indicator while AI responses are being prepared.
 - Remove a conversation from your own chat list without deleting it for other participants.
 - Conversation history and unread message counts persisted in PostgreSQL.
@@ -23,10 +23,10 @@ A native Calagopus Panel extension that combines a theme-aware chat widget with 
 - AI replies render standard Markdown emphasis and block quotes instead of showing formatting markers literally.
 - Provider-reported input/output token totals for AI requests made by All-in-One Chat.
 - Admin model discovery with a searchable model selector, plus a per-user Enter-to-send preference.
-- An **All-in-One settings** page in the admin sidebar (also available from **Admin → Extensions → All-in-One**) for AI settings, selectable server-tool pages, token-usage totals, and changelog.
+- Separate **Chat & AI**, **Advertising**, **Modpack installer**, **Mod manager**, **Plugin manager**, **Player manager**, and **server.properties** pages in the Admin sidebar. Each server-tool page can be enabled or disabled independently.
 - API keys are stored through Calagopus's encrypted extension-settings API; chat content and API keys are not written to activity-log payloads.
 - Mantine components and theme CSS variables keep the widget aligned with the active light/dark theme and custom panel palettes.
-- UI strings use Calagopus's translation system, with English fallbacks when a localized extension string is unavailable.
+- Extension UI strings are available in English and German; German covers all extension translation keys, and other missing locale entries fall back to English.
 
 ## Extension layout
 
@@ -44,12 +44,12 @@ cd ..
 cargo build --profile heavy-release
 ```
 
-The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate admin routes for All-in-One settings and Advertising, Minecraft-egg-filtered server pages, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
+The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate Admin routes for Chat & AI, Advertising, and each server-tool setting, Minecraft-egg-filtered server pages, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
 
 ## Configure AI
 
 1. Install and enable **All-in-One** in the Panel.
-2. Open **Admin → All-in-One settings** from the sidebar, or **Admin → Extensions → All-in-One → Configure**.
+2. Open **Admin → Chat & AI** from the sidebar, or **Admin → Extensions → All-in-One → Configure**.
 3. Choose OpenAI-compatible, OpenRouter, Anthropic, Google Gemini, or Ollama.
 4. Enter the provider’s base URL and API key; Ollama can run without one.
 5. Load the provider’s available models and select one, or enter a model ID manually.
@@ -60,7 +60,7 @@ OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use th
 
 ## Advertising banners
 
-Administrators configure advertising on the separate **Admin → Advertising** page, not in All-in-One settings. Four independent placements support per-slot dimensions and can be scoped to all authenticated pages or only the dashboard. Choose a custom HTTPS image/link or a sandboxed HTTPS iframe from a provider that supports embed URLs. Iframes run in an isolated sandbox; the extension does not execute provider JavaScript in the Panel page. Google AdSense uses a script-based embed, so use an iframe-compatible provider for this mode.
+Administrators configure advertising on the separate **Admin → Advertising** page. It includes a demo banner preview that is visible only in the settings page. Four independent placements support per-slot dimensions and can be scoped to all authenticated pages or only the dashboard. Choose a custom HTTPS image/link or a sandboxed HTTPS iframe from a provider that supports embed URLs. Iframes run in an isolated sandbox; the extension does not execute provider JavaScript in the Panel page. Google AdSense uses a script-based embed, so use an iframe-compatible provider for this mode.
 
 ## Official documentation
 

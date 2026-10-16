@@ -4,6 +4,7 @@ import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { useForm } from '@mantine/form';
 import {
   Alert,
+  Badge,
   Button,
   Group,
   Loader,
@@ -152,6 +153,47 @@ export default function AdvertisingSettingsPage() {
         >
           {t('ads.privacyNotice', {})}
         </Alert>
+
+        <Paper withBorder radius='md' p='md'>
+          <Stack gap='sm'>
+            <div>
+              <Text fw={700}>{t('ads.demoPreviewTitle', {})}</Text>
+              <Text size='sm' c='dimmed'>
+                {t('ads.demoPreviewDescription', {})}
+              </Text>
+            </div>
+            <div
+              role='group'
+              aria-label={t('ads.demoPreviewTitle', {})}
+              style={{
+                minHeight: 90,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 'var(--mantine-spacing-md)',
+                padding: 'var(--mantine-spacing-md)',
+                borderRadius: 'var(--mantine-radius-sm)',
+                background: 'linear-gradient(110deg, var(--mantine-color-blue-9), var(--mantine-color-cyan-7))',
+              }}
+            >
+              <Stack gap={4}>
+                <Badge w='fit-content' color='dark' variant='filled'>
+                  {t('ads.demoLabel', {})}
+                </Badge>
+                <Text fw={700} c='white'>
+                  {t('ads.demoHeadline', {})}
+                </Text>
+                <Text size='xs' c='white'>
+                  {t('ads.demoBody', {})}
+                </Text>
+              </Stack>
+              <Button variant='white' color='dark' disabled>
+                {t('ads.demoButton', {})}
+              </Button>
+            </div>
+          </Stack>
+        </Paper>
 
         <Paper withBorder radius='md' p='md'>
           <form onSubmit={form.onSubmit(save)}>

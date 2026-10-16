@@ -120,6 +120,10 @@ export const serverToolPagesResponseSchema = z.object({
   settings: serverToolPagesSchema,
 });
 
+export const updateServerToolPagesSchema = z.object({
+  serverToolPages: serverToolPagesSchema,
+});
+
 export const adminSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   aiProvider: aiProviderSchema,
@@ -235,7 +239,7 @@ export const updateAdminSettingsSchema = z.object({
   aiServerInfoEnabled: z.boolean(),
   aiServerPowerEnabled: z.boolean(),
   floatingWidgetEnabled: z.boolean(),
-  serverToolPages: serverToolPagesSchema,
+  serverToolPages: serverToolPagesSchema.optional(),
   clearServerControlApiKey: z.boolean(),
   clearApiKey: z.boolean(),
 });
@@ -245,8 +249,10 @@ export type ConversationKind = z.infer<typeof conversationKindSchema>;
 export type ChatServerOption = z.infer<typeof chatServerOptionSchema>;
 export type ChatServerResources = z.infer<typeof chatServerResourcesSchema>;
 export type AiProvider = z.infer<typeof aiProviderSchema>;
+export type AdminSettings = z.infer<typeof adminSettingsSchema>;
 export type TokenUsage = z.infer<typeof tokenUsageSchema>;
 export type ServerToolPages = z.infer<typeof serverToolPagesSchema>;
+export type UpdateServerToolPages = z.infer<typeof updateServerToolPagesSchema>;
 export type AiServerAction = z.infer<typeof aiServerActionSchema>;
 export type ChatMessage = z.infer<typeof messageSchema>;
 export type ChatUser = z.infer<typeof userSummarySchema>;

@@ -19,6 +19,13 @@ import ChatWidget from './ChatWidget.tsx';
 import ConfigurationPage from './ConfigurationPage.tsx';
 import ServerToolsBootstrap from './ServerToolsBootstrap.tsx';
 import {
+  ModManagerSettingsPage,
+  ModpackInstallerSettingsPage,
+  PlayerManagerSettingsPage,
+  PluginManagerSettingsPage,
+  ServerPropertiesSettingsPage,
+} from './ServerToolSettingsPage.tsx';
+import {
   ModManagerPage,
   ModpackInstallerPage,
   PlayerManagerPage,
@@ -57,6 +64,51 @@ class AllInOneExtension extends Extension {
       path: '/calagopus-ads',
       icon: faBullhorn,
       element: AdvertisingSettingsPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('tools.sidebar.modpacks', {}),
+      path: '/all-in-one/modpacks',
+      icon: faBoxOpen,
+      element: ModpackInstallerSettingsPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('tools.sidebar.mods', {}),
+      path: '/all-in-one/mods',
+      icon: faCube,
+      element: ModManagerSettingsPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('tools.sidebar.plugins', {}),
+      path: '/all-in-one/plugins',
+      icon: faPuzzlePiece,
+      element: PluginManagerSettingsPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('tools.sidebar.players', {}),
+      path: '/all-in-one/players',
+      icon: faUsers,
+      element: PlayerManagerSettingsPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('tools.sidebar.serverProperties', {}),
+      path: '/all-in-one/server-properties',
+      icon: faFileLines,
+      element: ServerPropertiesSettingsPage,
       permission: 'extensions.manage',
       category: 'system',
       exact: true,

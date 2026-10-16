@@ -26,7 +26,6 @@ import { useToast } from '@/providers/ToastProvider.tsx';
 import getAdminSettings from './api/getAdminSettings.ts';
 import getProviderModels from './api/getProviderModels.ts';
 import updateAdminSettings from './api/updateAdminSettings.ts';
-import { setCachedServerToolPages } from './serverToolsVisibility.ts';
 import CHANGELOG from './CHANGELOG.md?raw';
 import {
   updateAdminSettingsSchema,
@@ -117,13 +116,6 @@ export default function ConfigurationPage() {
       aiServerInfoEnabled: false,
       aiServerPowerEnabled: false,
       floatingWidgetEnabled: true,
-      serverToolPages: {
-        modpacks: true,
-        mods: true,
-        plugins: true,
-        players: true,
-        serverProperties: true,
-      },
       clearServerControlApiKey: false,
       clearApiKey: false,
     },
@@ -148,7 +140,6 @@ export default function ConfigurationPage() {
           aiServerInfoEnabled: settings.aiServerInfoEnabled,
           aiServerPowerEnabled: settings.aiServerPowerEnabled,
           floatingWidgetEnabled: settings.floatingWidgetEnabled,
-          serverToolPages: settings.serverToolPages,
           clearServerControlApiKey: false,
           clearApiKey: false,
         });
@@ -171,7 +162,6 @@ export default function ConfigurationPage() {
     setSaving(true);
     try {
       await updateAdminSettings(values);
-      setCachedServerToolPages(values.serverToolPages);
       if (values.clearApiKey) setApiKeyConfigured(false);
       else if (values.aiApiKey.trim()) setApiKeyConfigured(true);
       if (values.clearServerControlApiKey) setServerControlApiKeyConfigured(false);
@@ -252,37 +242,6 @@ export default function ConfigurationPage() {
                 description={tExt('settings.enableFloatingWidgetDescription', {})}
                 {...form.getInputProps('floatingWidgetEnabled', { type: 'checkbox' })}
               />
-
-              <Paper withBorder radius='sm' p='md'>
-                <Stack gap='sm'>
-                  <div>
-                    <Text fw={700}>{tExt('settings.serverToolPagesTitle', {})}</Text>
-                    <Text size='xs' c='dimmed'>
-                      {tExt('settings.serverToolPagesDescription', {})}
-                    </Text>
-                  </div>
-                  <Switch
-                    label={tExt('settings.serverToolPages.modpacks', {})}
-                    {...form.getInputProps('serverToolPages.modpacks', { type: 'checkbox' })}
-                  />
-                  <Switch
-                    label={tExt('settings.serverToolPages.mods', {})}
-                    {...form.getInputProps('serverToolPages.mods', { type: 'checkbox' })}
-                  />
-                  <Switch
-                    label={tExt('settings.serverToolPages.plugins', {})}
-                    {...form.getInputProps('serverToolPages.plugins', { type: 'checkbox' })}
-                  />
-                  <Switch
-                    label={tExt('settings.serverToolPages.players', {})}
-                    {...form.getInputProps('serverToolPages.players', { type: 'checkbox' })}
-                  />
-                  <Switch
-                    label={tExt('settings.serverToolPages.serverProperties', {})}
-                    {...form.getInputProps('serverToolPages.serverProperties', { type: 'checkbox' })}
-                  />
-                </Stack>
-              </Paper>
 
               <Switch
                 label={tExt('settings.enableServerInfo', {})}

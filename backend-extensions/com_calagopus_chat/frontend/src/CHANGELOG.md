@@ -1,11 +1,13 @@
 # All-in-One changelog
 
-## 0.2.7 — 2026-10-16
+## 0.2.7 — 2026-10-17
 - Rebranded the extension display name to All-in-One while preserving its `com.calagopus.chat` package ID for upgrades.
 - Added separate, administrator-configurable Minecraft server pages for modpacks, mods, plugins, players, and `server.properties`, filtered by egg compatibility.
 - Changed Modrinth catalogs to load popular projects automatically, with optional search and game-version/loader filters.
 - Expanded Player Manager with online, banned, whitelisted, and operator lists; added best-effort inventory, TPS, and optional ping display.
 - Added a `server.properties` editor that offers to start or restart the server after saving.
+- Reworked the properties editor into individual fields, added a separate Admin sidebar page for each server-tool setting, and added a demo advertising preview.
+- Added a German locale for all extension UI strings and included locale files in the release archive.
 
 ## 0.2.6 — 2026-10-15
 - Added a permission-gated server-tools page with Modrinth search and installers for server-side mods, plugins, and `.mrpack` modpacks.
