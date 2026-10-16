@@ -120,7 +120,7 @@ async fn load_models(
             if provider == "openrouter" {
                 request = request
                     .header("HTTP-Referer", "https://calagopus.com")
-                    .header("X-Title", "Calagopus Chat");
+                    .header("X-Title", "All-in-One");
             }
             provider_json(request).await?
         }

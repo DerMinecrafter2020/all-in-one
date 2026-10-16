@@ -1,4 +1,11 @@
-# Calagopus Chat changelog
+# All-in-One changelog
+
+## 0.2.7 — 2026-10-16
+- Rebranded the extension display name to All-in-One while preserving its `com.calagopus.chat` package ID for upgrades.
+- Added separate, administrator-configurable Minecraft server pages for modpacks, mods, plugins, players, and `server.properties`, filtered by egg compatibility.
+- Changed Modrinth catalogs to load popular projects automatically, with optional search and game-version/loader filters.
+- Expanded Player Manager with online, banned, whitelisted, and operator lists; added best-effort inventory, TPS, and optional ping display.
+- Added a `server.properties` editor that offers to start or restart the server after saving.
 
 ## 0.2.6 — 2026-10-15
 - Added a permission-gated server-tools page with Modrinth search and installers for server-side mods, plugins, and `.mrpack` modpacks.
@@ -50,7 +57,7 @@
 - Added a confirmed option to remove a direct, group, or AI conversation from your chat list without deleting it for other participants.
 
 ## 0.1.5 — 2026-10-06
-- Added provider-reported input and output token totals for AI requests made by Calagopus Chat.
+- Added provider-reported input and output token totals for AI requests made by the extension.
 - Added a dedicated Chat Settings page in the admin sidebar and an in-page changelog.
 - Made the chat widget resize for mobile, tablet, and desktop viewports, and improved the settings layout on narrow screens.
 

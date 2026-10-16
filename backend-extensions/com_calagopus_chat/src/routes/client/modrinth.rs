@@ -47,7 +47,7 @@ mod search {
 
     #[derive(Deserialize)]
     pub struct SearchQuery {
-        query: String,
+        query: Option<String>,
         project_type: String,
         game_version: Option<String>,
         loader: Option<String>,
@@ -56,7 +56,7 @@ mod search {
     }
 
     #[utoipa::path(get, path = "/search", params(
-        ("query" = String, Query, description = "Modrinth search terms."),
+        ("query" = Option<String>, Query, description = "Optional Modrinth search terms."),
         ("project_type" = String, Query, description = "One of mod, modpack, or plugin."),
         ("game_version" = Option<String>, Query, description = "Optional Minecraft version filter."),
         ("loader" = Option<String>, Query, description = "Optional Modrinth loader/category filter."),
@@ -70,10 +70,9 @@ mod search {
         _user: GetUser,
         Query(query): Query<SearchQuery>,
     ) -> ApiResponseResult {
-        let query_text = query.query.trim();
+        let query_text = query.query.as_deref().unwrap_or_default().trim();
         let project_type = query.project_type.trim();
-        if query_text.is_empty()
-            || query_text.chars().count() > 100
+        if query_text.chars().count() > 100
             || !matches!(project_type, "mod" | "modpack" | "plugin")
             || query
                 .game_version
@@ -100,9 +99,8 @@ mod search {
                 format!("project_type:{project_type}")
             },
         ]];
-        if project_type == "mod" {
-            // Keep client-only projects such as rendering mods out of a server
-            // installer search.
+        if matches!(project_type, "mod" | "modpack") {
+            // Keep client-only projects out of server installers.
             facets.push(vec![
                 "environment:server_only".to_string(),
                 "environment:server_only_client_optional".to_string(),
@@ -122,8 +120,10 @@ mod search {
         let mut url = Url::parse("https://api.modrinth.com/v2/search")?;
         {
             let mut query_pairs = url.query_pairs_mut();
+            if !query_text.is_empty() {
+                query_pairs.append_pair("query", query_text);
+            }
             query_pairs
-                .append_pair("query", query_text)
                 .append_pair("facets", &facets)
                 .append_pair(
                     "limit",
@@ -133,7 +133,14 @@ mod search {
                     "offset",
                     &query.offset.unwrap_or(0).min(10_000).to_string(),
                 )
-                .append_pair("index", "relevance");
+                .append_pair(
+                    "index",
+                    if query_text.is_empty() {
+                        "downloads"
+                    } else {
+                        "relevance"
+                    },
+                );
         }
 
         get_modrinth_json(&state.0, url).await

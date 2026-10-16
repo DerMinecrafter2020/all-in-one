@@ -52,14 +52,14 @@ export type ModrinthProjectType = 'mod' | 'modpack' | 'plugin';
 const baseUrl = '/api/client/extensions/com.calagopus.chat/modrinth';
 
 export async function searchModrinthProjects(params: {
-  query: string;
+  query?: string;
   projectType: ModrinthProjectType;
   gameVersion?: string;
   loader?: string;
 }) {
   const { data } = await axiosInstance.get(`${baseUrl}/search`, {
     params: {
-      query: params.query,
+      query: params.query?.trim() || undefined,
       project_type: params.projectType,
       game_version: params.gameVersion || undefined,
       loader: params.loader || undefined,

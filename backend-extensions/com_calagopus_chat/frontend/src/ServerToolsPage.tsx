@@ -1,9 +1,16 @@
-import { Alert, Tabs } from '@mantine/core';
+import { Alert } from '@mantine/core';
 import ServerContentContainer from '@/elements/containers/ServerContentContainer.tsx';
 import { useServerCan } from '@/plugins/usePermissions.ts';
 import { useServerStore } from '@/stores/server.ts';
 import ModrinthManager from './ModrinthManager.tsx';
-import PlayerManager from './PlayerManager.tsx';
+import PlayerManager from './PlayerManagerPage.tsx';
+import ServerPropertiesEditor from './ServerPropertiesEditor.tsx';
+import {
+  getCachedServerToolPages,
+  isMinecraftEgg,
+  supportsServerToolPage,
+  type ServerToolPageKey,
+} from './serverToolsVisibility.ts';
 import { useExtTranslations } from './translations.ts';
 
 const MOD_LOADERS = [
@@ -25,86 +32,161 @@ const PLUGIN_LOADERS = [
   { value: 'waterfall', label: 'Waterfall' },
 ];
 
-export default function ServerToolsPage() {
+interface Props {
+  page: ServerToolPageKey;
+}
+
+export function ModpackInstallerPage() {
+  return <ServerToolPage page='modpacks' />;
+}
+
+export function ModManagerPage() {
+  return <ServerToolPage page='mods' />;
+}
+
+export function PluginManagerPage() {
+  return <ServerToolPage page='plugins' />;
+}
+
+export function PlayerManagerPage() {
+  return <ServerToolPage page='players' />;
+}
+
+export function ServerPropertiesPage() {
+  return <ServerToolPage page='serverProperties' />;
+}
+
+function ServerToolPage({ page }: Props) {
   const { t } = useExtTranslations();
   const server = useServerStore((store) => store.server);
   const state = useServerStore((store) => store.state);
   const socketConnected = useServerStore((store) => store.socketConnected);
   const socketInstance = useServerStore((store) => store.socketInstance);
-
   const canInstallFiles = useServerCan(['files.read', 'files.create', 'files.delete'], false);
   const canInstallModpack = useServerCan(
     ['files.read', 'files.read-content', 'files.create', 'files.archive', 'files.delete'],
     false,
   );
-  const canReadConsole = useServerCan('control.read-console');
+  const canReadConsole = useServerCan(['control.read-console', 'control.console'], false);
   const canSendCommands = useServerCan('control.console');
+  const canReadFileContents = useServerCan('files.read-content');
+  const canWriteFiles = useServerCan('files.create');
+  const canRestart = useServerCan('control.restart');
+  const canStart = useServerCan('control.start');
   const serverStopped = state === 'offline' && !server.isTransferring && !server.status;
+  const serverBusy = Boolean(server.isTransferring || server.status || state === 'starting' || state === 'stopping');
+  const settings = getCachedServerToolPages();
+
+  const pageTitles: Record<ServerToolPageKey, string> = {
+    modpacks: t('tools.modpacksTitle', {}),
+    mods: t('tools.modsTitle', {}),
+    plugins: t('tools.pluginsTitle', {}),
+    players: t('tools.playersTitle', {}),
+    serverProperties: t('tools.serverPropertiesTitle', {}),
+  };
+  const title = pageTitles[page];
+
+  if (!isMinecraftEgg(server)) {
+    return (
+      <ServerContentContainer title={title}>
+        <div className='p-4'>
+          <Alert color='yellow'>{t('tools.notMinecraftEgg', {})}</Alert>
+        </div>
+      </ServerContentContainer>
+    );
+  }
+
+  if (!supportsServerToolPage(server, page)) {
+    return (
+      <ServerContentContainer title={title}>
+        <div className='p-4'>
+          <Alert color='yellow'>{t('tools.pageNotSupportedForEgg', { egg: server.egg.name })}</Alert>
+        </div>
+      </ServerContentContainer>
+    );
+  }
+
+  if (settings && !settings[page]) {
+    return (
+      <ServerContentContainer title={title}>
+        <div className='p-4'>
+          <Alert color='yellow'>{t('tools.toolPageDisabled', {})}</Alert>
+        </div>
+      </ServerContentContainer>
+    );
+  }
 
   return (
-    <ServerContentContainer title={t('tools.title', {})} subtitle={t('tools.description', {})}>
+    <ServerContentContainer title={title}>
       <div className='p-4'>
-        {(server.isTransferring || server.status) && (
+        {serverBusy && (
           <Alert color='yellow' className='mb-4'>
             {t('tools.serverBusy', {})}
           </Alert>
         )}
 
-        <Tabs defaultValue='mods' keepMounted={false}>
-          <Tabs.List mb='md' grow>
-            <Tabs.Tab value='modpacks'>{t('tools.tabs.modpacks', {})}</Tabs.Tab>
-            <Tabs.Tab value='mods'>{t('tools.tabs.mods', {})}</Tabs.Tab>
-            <Tabs.Tab value='plugins'>{t('tools.tabs.plugins', {})}</Tabs.Tab>
-            <Tabs.Tab value='players'>{t('tools.tabs.players', {})}</Tabs.Tab>
-          </Tabs.List>
+        {page === 'modpacks' && (
+          <ModrinthManager
+            kind='modpack'
+            serverUuid={server.uuid}
+            canInstall={canInstallModpack}
+            serverStopped={serverStopped}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        )}
 
-          <Tabs.Panel value='modpacks'>
-            <ModrinthManager
-              kind='modpack'
-              serverUuid={server.uuid}
-              canInstall={canInstallModpack}
-              serverStopped={serverStopped}
-              socketConnected={socketConnected}
-              socketInstance={socketInstance}
-            />
-          </Tabs.Panel>
+        {page === 'mods' && (
+          <ModrinthManager
+            kind='mod'
+            serverUuid={server.uuid}
+            targetFolder='/mods'
+            loaderOptions={MOD_LOADERS}
+            canInstall={canInstallFiles}
+            serverStopped={serverStopped}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        )}
 
-          <Tabs.Panel value='mods'>
-            <ModrinthManager
-              kind='mod'
-              serverUuid={server.uuid}
-              targetFolder='/mods'
-              loaderOptions={MOD_LOADERS}
-              canInstall={canInstallFiles}
-              serverStopped={serverStopped}
-              socketConnected={socketConnected}
-              socketInstance={socketInstance}
-            />
-          </Tabs.Panel>
+        {page === 'plugins' && (
+          <ModrinthManager
+            kind='plugin'
+            serverUuid={server.uuid}
+            targetFolder='/plugins'
+            loaderOptions={PLUGIN_LOADERS}
+            canInstall={canInstallFiles}
+            serverStopped={serverStopped}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        )}
 
-          <Tabs.Panel value='plugins'>
-            <ModrinthManager
-              kind='plugin'
-              serverUuid={server.uuid}
-              targetFolder='/plugins'
-              loaderOptions={PLUGIN_LOADERS}
-              canInstall={canInstallFiles}
-              serverStopped={serverStopped}
-              socketConnected={socketConnected}
-              socketInstance={socketInstance}
-            />
-          </Tabs.Panel>
+        {page === 'players' && (
+          <PlayerManager
+            canReadConsole={canReadConsole}
+            canSendCommands={canSendCommands}
+            canReadFiles={canReadFileContents}
+            serverUuid={server.uuid}
+            serverRunning={state === 'running'}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        )}
 
-          <Tabs.Panel value='players'>
-            <PlayerManager
-              canReadConsole={canReadConsole}
-              canSendCommands={canSendCommands}
-              serverRunning={state === 'running'}
-              socketConnected={socketConnected}
-              socketInstance={socketInstance}
-            />
-          </Tabs.Panel>
-        </Tabs>
+        {page === 'serverProperties' && (
+          <ServerPropertiesEditor
+            serverUuid={server.uuid}
+            serverState={state}
+            serverBusy={serverBusy}
+            canRead={canReadFileContents}
+            canWrite={canWriteFiles}
+            canRestart={canRestart}
+            canStart={canStart}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        )}
       </div>
     </ServerContentContainer>
   );

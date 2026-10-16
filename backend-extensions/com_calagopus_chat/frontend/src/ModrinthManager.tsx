@@ -1,7 +1,7 @@
 import { faBoxOpen, faCube, faDownload, faMagnifyingGlass, faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Alert, Badge, Button, Card, Group, Image, Loader, Modal, Select, Stack, Text, TextInput } from '@mantine/core';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { httpErrorToHuman } from '@/api/axios.ts';
 import { getModrinthVersions, searchModrinthProjects } from './api/modrinth.ts';
@@ -74,10 +74,11 @@ export default function ModrinthManager({
   const { t } = useExtTranslations();
   const { addToast } = useToast();
   const [query, setQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
   const [gameVersion, setGameVersion] = useState('');
   const [loader, setLoader] = useState(loaderOptions[0]?.value ?? '');
   const [projects, setProjects] = useState<ModrinthProject[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(true);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<ModrinthProject | null>(null);
   const [versions, setVersions] = useState<ModrinthVersion[]>([]);
@@ -102,32 +103,39 @@ export default function ModrinthManager({
     cleanup: t('tools.progress.cleanup', {}),
   };
 
-  const runSearch = async (event?: FormEvent<HTMLFormElement>) => {
+  const loadProjects = useCallback(
+    async (searchTerm: string) => {
+      setSearchLoading(true);
+      setSearchError(null);
+      setInstallSummary(null);
+      try {
+        const response = await searchModrinthProjects({
+          query: searchTerm.trim() || undefined,
+          projectType: kind,
+          gameVersion: gameVersion.trim() || undefined,
+          loader: isModpack ? undefined : loader || undefined,
+        });
+        setProjects(response.hits);
+      } catch (error) {
+        setSearchError(httpErrorToHuman(error));
+        setProjects([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    },
+    [gameVersion, isModpack, kind, loader],
+  );
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void loadProjects(submittedQuery), 300);
+    return () => window.clearTimeout(timeout);
+  }, [loadProjects, submittedQuery]);
+
+  const runSearch = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const normalizedQuery = query.trim();
-    if (!normalizedQuery) {
-      setSearchError(t('tools.searchRequired', {}));
-      setProjects([]);
-      return;
-    }
-
-    setSearchLoading(true);
-    setSearchError(null);
-    setInstallSummary(null);
-    try {
-      const response = await searchModrinthProjects({
-        query: normalizedQuery,
-        projectType: kind,
-        gameVersion: gameVersion.trim() || undefined,
-        loader: isModpack ? undefined : loader || undefined,
-      });
-      setProjects(response.hits);
-    } catch (error) {
-      setSearchError(httpErrorToHuman(error));
-      setProjects([]);
-    } finally {
-      setSearchLoading(false);
-    }
+    if (normalizedQuery === submittedQuery) void loadProjects(normalizedQuery);
+    else setSubmittedQuery(normalizedQuery);
   };
 
   const openVersions = async (project: ModrinthProject) => {
@@ -225,8 +233,9 @@ export default function ModrinthManager({
   return (
     <Stack gap='md'>
       <div>
-        <Text fw={700} size='lg'>{title}</Text>
-        <Text size='sm' c='dimmed'>{t('tools.modrinthDescription', {})}</Text>
+        <Text size='sm' c='dimmed'>
+          {t('tools.modrinthDescription', {})}
+        </Text>
       </div>
 
       {!canInstall && <Alert color='yellow'>{t('tools.filePermissionRequired', {})}</Alert>}
@@ -269,9 +278,15 @@ export default function ModrinthManager({
       </form>
 
       {searchError && <Alert color='red'>{searchError}</Alert>}
-      {searchLoading && <Group justify='center'><Loader size='sm' /></Group>}
+      {searchLoading && (
+        <Group justify='center'>
+          <Loader size='sm' />
+        </Group>
+      )}
       {!searchLoading && projects.length === 0 && !searchError && (
-        <Text c='dimmed' size='sm'>{t('tools.noSearchResults', {})}</Text>
+        <Text c='dimmed' size='sm'>
+          {t('tools.noSearchResults', {})}
+        </Text>
       )}
 
       {projects.length > 0 && (
@@ -284,25 +299,31 @@ export default function ModrinthManager({
                   {iconUrl ? (
                     <Image src={iconUrl} alt='' w={48} h={48} radius='sm' fit='cover' referrerPolicy='no-referrer' />
                   ) : (
-                    <div
-                      className='flex h-12 w-12 shrink-0 items-center justify-center rounded bg-(--mantine-color-default)'
-                    >
+                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded bg-(--mantine-color-default)'>
                       <FontAwesomeIcon icon={getProjectKindIcon(kind)} />
                     </div>
                   )}
                   <Stack gap={4} className='min-w-0 flex-1'>
                     <Group justify='space-between' align='flex-start' wrap='nowrap'>
                       <div className='min-w-0'>
-                        <Text fw={700} lineClamp={1}>{project.title}</Text>
-                        <Text size='xs' c='dimmed'>{t('tools.projectBy', { author: project.author })}</Text>
+                        <Text fw={700} lineClamp={1}>
+                          {project.title}
+                        </Text>
+                        <Text size='xs' c='dimmed'>
+                          {t('tools.projectBy', { author: project.author })}
+                        </Text>
                       </div>
                       <Badge variant='light'>{formatDownloads(project.downloads)}</Badge>
                     </Group>
-                    <Text size='sm' c='dimmed' lineClamp={3}>{project.description}</Text>
+                    <Text size='sm' c='dimmed' lineClamp={3}>
+                      {project.description}
+                    </Text>
                     <Group justify='space-between' mt='xs'>
                       <Group gap={4}>
                         {project.categories.slice(0, 3).map((category) => (
-                          <Badge key={category} size='xs' variant='outline'>{category}</Badge>
+                          <Badge key={category} size='xs' variant='outline'>
+                            {category}
+                          </Badge>
                         ))}
                       </Group>
                       <Button
@@ -335,9 +356,13 @@ export default function ModrinthManager({
       >
         <Stack gap='md'>
           {versionsLoading ? (
-            <Group justify='center'><Loader size='sm' /></Group>
+            <Group justify='center'>
+              <Loader size='sm' />
+            </Group>
           ) : versions.length === 0 ? (
-            <Text size='sm' c='dimmed'>{t('tools.noInstallableVersions', {})}</Text>
+            <Text size='sm' c='dimmed'>
+              {t('tools.noInstallableVersions', {})}
+            </Text>
           ) : (
             <>
               <Select

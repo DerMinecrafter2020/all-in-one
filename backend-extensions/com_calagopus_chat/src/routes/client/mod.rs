@@ -6,6 +6,7 @@ mod conversation;
 mod conversations;
 mod models;
 mod modrinth;
+mod server_tools;
 mod users;
 
 pub fn router(state: &State) -> OpenApiRouter<State> {
@@ -14,5 +15,6 @@ pub fn router(state: &State) -> OpenApiRouter<State> {
         .nest("/conversations", conversations::router(state))
         .nest("/advertising", advertising::router(state))
         .nest("/modrinth", modrinth::router(state))
+        .nest("/server-tools", server_tools::router(state))
         .with_state(state.clone())
 }

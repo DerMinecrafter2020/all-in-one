@@ -26,6 +26,7 @@ mod get {
         ai_server_info_enabled: bool,
         ai_server_power_enabled: bool,
         floating_widget_enabled: bool,
+        server_tool_pages: crate::settings::ServerToolPagesSettings,
     }
 
     #[derive(ToSchema, Serialize)]
@@ -80,6 +81,7 @@ mod get {
                 ai_server_power_enabled: settings.ai_server_power_enabled
                     && !settings.ai_server_control_api_key.trim().is_empty(),
                 floating_widget_enabled: settings.floating_widget_enabled,
+                server_tool_pages: settings.server_tool_pages,
             },
             token_usage: TokenUsageResponse {
                 input_tokens: usage.try_get("input_tokens")?,
@@ -116,6 +118,8 @@ mod put {
         clear_server_control_api_key: bool,
         #[serde(default = "default_floating_widget_enabled")]
         floating_widget_enabled: bool,
+        #[serde(default)]
+        server_tool_pages: Option<crate::settings::ServerToolPagesSettings>,
         #[serde(default)]
         clear_api_key: bool,
     }
@@ -173,6 +177,9 @@ mod put {
         }
 
         let current_settings = crate::settings::load(&state.0).await?;
+        let server_tool_pages = data
+            .server_tool_pages
+            .unwrap_or(current_settings.server_tool_pages);
         let effective_server_control_api_key = if data.clear_server_control_api_key {
             ""
         } else if !server_control_api_key.is_empty() {
@@ -238,6 +245,7 @@ mod put {
             extension_settings.ai_server_info_enabled = data.ai_server_info_enabled;
             extension_settings.ai_server_power_enabled = data.ai_server_power_enabled;
             extension_settings.floating_widget_enabled = data.floating_widget_enabled;
+            extension_settings.server_tool_pages = server_tool_pages;
 
             if data.clear_api_key {
                 extension_settings.ai_api_key = compact_str::CompactString::default();
@@ -265,6 +273,7 @@ mod put {
                     "ai_server_info_enabled": data.ai_server_info_enabled,
                     "ai_server_power_enabled": data.ai_server_power_enabled,
                     "floating_widget_enabled": data.floating_widget_enabled,
+                    "server_tool_pages": server_tool_pages,
                     "api_key_updated": api_key_updated,
                     "server_control_api_key_updated": server_control_api_key_updated,
                 }),

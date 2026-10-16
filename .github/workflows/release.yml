@@ -1,4 +1,4 @@
-name: Release Calagopus Chat
+name: Release All-in-One
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag to publish (for example v0.2.6)
+        description: Version tag to publish (for example v0.2.7)
         required: true
         type: string
 
@@ -380,7 +380,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.prepare.outputs.release_tag }}
-          name: Calagopus Chat ${{ needs.prepare.outputs.release_tag }}
+          name: All-in-One ${{ needs.prepare.outputs.release_tag }}
           target_commitish: ${{ github.sha }}
           body_path: ${{ steps.changelog.outputs.path }}
           generate_release_notes: true

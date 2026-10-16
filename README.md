@@ -1,6 +1,6 @@
-# Calagopus Chat
+# All-in-One
 
-A native Calagopus Panel extension that adds an always-available, theme-aware chat widget. It supports direct messages, group conversations, unread counts, and private AI conversations configured by a panel administrator.
+A native Calagopus Panel extension that combines a theme-aware chat widget with Modrinth installers, Minecraft player management, and a `server.properties` editor.
 
 ## Features
 
@@ -11,8 +11,9 @@ A native Calagopus Panel extension that adds an always-available, theme-aware ch
 - A first-use AI chat guide explaining privacy, safe use, and available chat commands.
 - A `/status` chat command with a searchable server picker that reads live status directly from the Panel without an AI-provider call.
 - Admin-configurable top, bottom, left, and right custom image/link or sandboxed iframe banners across authenticated Panel pages.
-- A server-tools page with Modrinth search and installers for modpacks, server-side mods, and plugins, plus a player manager for online players and kick/ban/unban/whitelist actions. Player actions require `control.console`; reading the online list additionally requires `control.read-console`.
-- File installs follow the server's Panel permissions, avoid overwriting existing files, and require the Java server to be stopped. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command.
+- Separate Modrinth modpack, mod, and plugin pages load popular projects automatically, offer version selection, and appear only for compatible Minecraft Eggs; administrators can toggle each page in All-in-One settings.
+- The Minecraft player manager shows online, banned, whitelisted, and opped players. Inventory/TPS use server commands where supported, ping is shown when available, and the configured player limit comes from `server.properties` or the server list response.
+- File installs follow the server's Panel permissions, avoid overwriting existing files, and require the Java server to be stopped. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command. Saving `server.properties` asks whether to start or restart the server.
 - An animated typing indicator while AI responses are being prepared.
 - Remove a conversation from your own chat list without deleting it for other participants.
 - Conversation history and unread message counts persisted in PostgreSQL.
@@ -20,16 +21,16 @@ A native Calagopus Panel extension that adds an always-available, theme-aware ch
 - Optional AI server information tools and start/stop/restart requests, gated by admin settings, provider tool-calling support, and the current user's Panel server permissions.
 - Power requests also require a separate encrypted Panel user API key as a permission cap; it cannot grant a user more rights than their own per-server permissions.
 - AI replies render standard Markdown emphasis and block quotes instead of showing formatting markers literally.
-- Provider-reported input/output token totals for AI requests made by Calagopus Chat.
+- Provider-reported input/output token totals for AI requests made by All-in-One Chat.
 - Admin model discovery with a searchable model selector, plus a per-user Enter-to-send preference.
-- A **Chat settings** page in the admin sidebar (also available from **Admin → Extensions → Calagopus Chat**) for the AI URL, model, provider key, Panel server-control key, system prompt, token-usage totals, and changelog.
+- An **All-in-One settings** page in the admin sidebar (also available from **Admin → Extensions → All-in-One**) for AI settings, selectable server-tool pages, token-usage totals, and changelog.
 - API keys are stored through Calagopus's encrypted extension-settings API; chat content and API keys are not written to activity-log payloads.
 - Mantine components and theme CSS variables keep the widget aligned with the active light/dark theme and custom panel palettes.
 - UI strings use Calagopus's translation system, with English fallbacks when a localized extension string is unavailable.
 
 ## Extension layout
 
-The extension source lives in `backend-extensions/com_calagopus_chat/`, using the canonical directory structure from the [official extension file-structure guide](https://calagopus.com/docs/panel/extensions/file-structure). Its dotted package name is `com.calagopus.chat`.
+The extension source lives in `backend-extensions/com_calagopus_chat/`, using the canonical directory structure from the [official extension file-structure guide](https://calagopus.com/docs/panel/extensions/file-structure). Its display name is **All-in-One**. The technical package name remains `com.calagopus.chat` so existing installations can upgrade in place.
 
 This repository is the extension source, not a full Panel checkout. The Rust manifest intentionally uses Calagopus workspace dependencies. To develop it locally, copy `backend-extensions/com_calagopus_chat/` into a matching Calagopus Panel checkout under `backend-extensions/`, then follow the official [development environment](https://calagopus.com/docs/panel/extensions/dev-environment) and [installation](https://calagopus.com/docs/panel/extensions/installing-extensions) guides. Extensions require the Heavy image or a full development environment.
 
@@ -43,23 +44,23 @@ cd ..
 cargo build --profile heavy-release
 ```
 
-The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate admin sidebar routes for Chat settings and Advertising, a permission-gated server-tools route, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
+The extension targets Calagopus Panel `>=1.2.5`. Its frontend uses the official global page slot, separate admin routes for All-in-One settings and Advertising, Minecraft-egg-filtered server pages, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
 
 ## Configure AI
 
-1. Install and enable **Calagopus Chat** in the Panel.
-2. Open **Admin → Chat settings** from the sidebar, or **Admin → Extensions → Calagopus Chat → Configure**.
+1. Install and enable **All-in-One** in the Panel.
+2. Open **Admin → All-in-One settings** from the sidebar, or **Admin → Extensions → All-in-One → Configure**.
 3. Choose OpenAI-compatible, OpenRouter, Anthropic, Google Gemini, or Ollama.
 4. Enter the provider’s base URL and API key; Ollama can run without one.
 5. Load the provider’s available models and select one, or enter a model ID manually.
 6. Adjust the system prompt and enable AI chat.
 7. To enable server power actions, enter a separate Panel user API key whose owner can access the target servers and whose scopes include `control.start`, `control.stop`, and `control.restart`. Keep the server-information and power-action settings enabled as desired.
 
-OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use their native Messages and `generateContent` APIs. AI server tools require a model that supports function calling. The AI can only see servers the current user can access. Start/stop/restart requests require both the caller's per-server permission and the configured Panel API key's scope, and are rechecked at confirmation. AI-enabled groups respond only when a user explicitly mentions `@AI`; the recent group conversation is then sent to the configured AI provider for context. The AI cannot invoke arbitrary console commands or file operations; the separate Server tools page exposes only fixed player-management commands and permission-checked installers. Token totals reflect only Calagopus Chat calls, using usage fields reported by the configured provider; they are not account-wide billing totals. Providers that omit usage details are excluded. Neither API key is returned by the admin settings endpoint; leave each field blank to preserve its saved key or select its **Remove** option to clear it.
+OpenAI-compatible providers use `/chat/completions`; Anthropic and Gemini use their native Messages and `generateContent` APIs. AI server tools require a model that supports function calling. The AI can only see servers the current user can access. Start/stop/restart requests require both the caller's per-server permission and the configured Panel API key's scope, and are rechecked at confirmation. AI-enabled groups respond only when a user explicitly mentions `@AI`; the recent group conversation is then sent to the configured AI provider for context. The AI cannot invoke arbitrary console commands or file operations; the separate Minecraft pages expose only fixed player-management commands and permission-checked installers. Token totals reflect only All-in-One Chat calls, using usage fields reported by the configured provider; they are not account-wide billing totals. Providers that omit usage details are excluded. Neither API key is returned by the admin settings endpoint; leave each field blank to preserve its saved key or select its **Remove** option to clear it.
 
 ## Advertising banners
 
-Administrators configure advertising on the separate **Admin → Advertising** page, not in Chat settings. Four independent placements support per-slot dimensions and can be scoped to all authenticated pages or only the dashboard. Choose a custom HTTPS image/link or a sandboxed HTTPS iframe from a provider that supports embed URLs. Iframes run in an isolated sandbox; the extension does not execute provider JavaScript in the Panel page. Google AdSense uses a script-based embed, so use an iframe-compatible provider for this mode.
+Administrators configure advertising on the separate **Admin → Advertising** page, not in All-in-One settings. Four independent placements support per-slot dimensions and can be scoped to all authenticated pages or only the dashboard. Choose a custom HTTPS image/link or a sandboxed HTTPS iframe from a provider that supports embed URLs. Iframes run in an isolated sandbox; the extension does not execute provider JavaScript in the Panel page. Google AdSense uses a script-based embed, so use an iframe-compatible provider for this mode.
 
 ## Official documentation
 

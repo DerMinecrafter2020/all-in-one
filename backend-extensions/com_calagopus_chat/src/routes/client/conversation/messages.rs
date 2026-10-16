@@ -320,7 +320,7 @@ mod post {
                 Err(error) => {
                     tracing::warn!(
                         conversation_uuid = %conversation_uuid,
-                        "Calagopus Chat AI request failed: {error:#}"
+                        "All-in-One AI request failed: {error:#}"
                     );
                     return Err(ApiResponse::error(
                         "The AI provider could not complete the request. Check the chat settings and try again.",
@@ -609,7 +609,7 @@ mod post {
             if settings.ai_provider.as_str() == "openrouter" {
                 request = request
                     .header("HTTP-Referer", "https://calagopus.com")
-                    .header("X-Title", "Calagopus Chat");
+                    .header("X-Title", "All-in-One");
             }
 
             let response = send_provider_request(request).await?;

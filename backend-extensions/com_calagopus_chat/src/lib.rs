@@ -17,7 +17,7 @@ pub struct ExtensionStruct;
 #[async_trait::async_trait]
 impl Extension for ExtensionStruct {
     async fn initialize(&mut self, _state: State) {
-        tracing::info!("Calagopus Chat extension initialized");
+        tracing::info!("All-in-One extension initialized");
     }
 
     async fn initialize_router(
@@ -48,7 +48,7 @@ impl Extension for ExtensionStruct {
         builder.add_user_permission_group(
             "chat",
             PermissionGroup {
-                description: "Permissions for Calagopus Chat.",
+                description: "Permissions for All-in-One chat features.",
                 permissions: indexmap::IndexMap::from([
                     ("read", "Allows viewing users, conversations, and messages."),
                     ("send", "Allows creating conversations and sending messages."),

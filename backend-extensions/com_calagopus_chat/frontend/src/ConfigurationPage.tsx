@@ -26,6 +26,7 @@ import { useToast } from '@/providers/ToastProvider.tsx';
 import getAdminSettings from './api/getAdminSettings.ts';
 import getProviderModels from './api/getProviderModels.ts';
 import updateAdminSettings from './api/updateAdminSettings.ts';
+import { setCachedServerToolPages } from './serverToolsVisibility.ts';
 import CHANGELOG from './CHANGELOG.md?raw';
 import {
   updateAdminSettingsSchema,
@@ -39,15 +40,12 @@ const changelogEntries = CHANGELOG.split(/^##\s+/m)
   .slice(1)
   .map((section) => {
     const [heading = '', ...lines] = section.trim().split(/\r?\n/);
-    const [, version, date = ''] =
-      heading.match(/^\[?([^\]\s]+)\]?(?:\s*[—–-]\s*(.*))?$/) ?? [];
+    const [, version, date = ''] = heading.match(/^\[?([^\]\s]+)\]?(?:\s*[—–-]\s*(.*))?$/) ?? [];
 
     return {
       version: version ?? heading,
       date,
-      changes: lines
-        .filter((line) => line.trimStart().startsWith('- '))
-        .map((line) => line.trim().slice(2)),
+      changes: lines.filter((line) => line.trimStart().startsWith('- ')).map((line) => line.trim().slice(2)),
     };
   })
   .filter((entry) => entry.changes.length > 0);
@@ -113,12 +111,19 @@ export default function ConfigurationPage() {
       aiProvider: 'openai_compatible',
       aiBaseUrl: 'https://api.openai.com/v1',
       aiModel: 'gpt-4o-mini',
-      aiSystemPrompt: 'You are the Calagopus Chat assistant. Be helpful, clear, and concise.',
+      aiSystemPrompt: 'You are the All-in-One assistant. Be helpful, clear, and concise.',
       aiApiKey: '',
       serverControlApiKey: '',
       aiServerInfoEnabled: false,
       aiServerPowerEnabled: false,
       floatingWidgetEnabled: true,
+      serverToolPages: {
+        modpacks: true,
+        mods: true,
+        plugins: true,
+        players: true,
+        serverProperties: true,
+      },
       clearServerControlApiKey: false,
       clearApiKey: false,
     },
@@ -143,6 +148,7 @@ export default function ConfigurationPage() {
           aiServerInfoEnabled: settings.aiServerInfoEnabled,
           aiServerPowerEnabled: settings.aiServerPowerEnabled,
           floatingWidgetEnabled: settings.floatingWidgetEnabled,
+          serverToolPages: settings.serverToolPages,
           clearServerControlApiKey: false,
           clearApiKey: false,
         });
@@ -165,6 +171,7 @@ export default function ConfigurationPage() {
     setSaving(true);
     try {
       await updateAdminSettings(values);
+      setCachedServerToolPages(values.serverToolPages);
       if (values.clearApiKey) setApiKeyConfigured(false);
       else if (values.aiApiKey.trim()) setApiKeyConfigured(true);
       if (values.clearServerControlApiKey) setServerControlApiKeyConfigured(false);
@@ -211,7 +218,9 @@ export default function ConfigurationPage() {
     return (
       <Group justify='center' py='xl'>
         <Loader size='sm' />
-        <Text size='sm' c='dimmed'>{tExt('settings.loading', {})}</Text>
+        <Text size='sm' c='dimmed'>
+          {tExt('settings.loading', {})}
+        </Text>
       </Group>
     );
   }
@@ -244,6 +253,37 @@ export default function ConfigurationPage() {
                 {...form.getInputProps('floatingWidgetEnabled', { type: 'checkbox' })}
               />
 
+              <Paper withBorder radius='sm' p='md'>
+                <Stack gap='sm'>
+                  <div>
+                    <Text fw={700}>{tExt('settings.serverToolPagesTitle', {})}</Text>
+                    <Text size='xs' c='dimmed'>
+                      {tExt('settings.serverToolPagesDescription', {})}
+                    </Text>
+                  </div>
+                  <Switch
+                    label={tExt('settings.serverToolPages.modpacks', {})}
+                    {...form.getInputProps('serverToolPages.modpacks', { type: 'checkbox' })}
+                  />
+                  <Switch
+                    label={tExt('settings.serverToolPages.mods', {})}
+                    {...form.getInputProps('serverToolPages.mods', { type: 'checkbox' })}
+                  />
+                  <Switch
+                    label={tExt('settings.serverToolPages.plugins', {})}
+                    {...form.getInputProps('serverToolPages.plugins', { type: 'checkbox' })}
+                  />
+                  <Switch
+                    label={tExt('settings.serverToolPages.players', {})}
+                    {...form.getInputProps('serverToolPages.players', { type: 'checkbox' })}
+                  />
+                  <Switch
+                    label={tExt('settings.serverToolPages.serverProperties', {})}
+                    {...form.getInputProps('serverToolPages.serverProperties', { type: 'checkbox' })}
+                  />
+                </Stack>
+              </Paper>
+
               <Switch
                 label={tExt('settings.enableServerInfo', {})}
                 description={tExt('settings.enableServerInfoDescription', {})}
@@ -261,9 +301,7 @@ export default function ConfigurationPage() {
                 leftSection={<FontAwesomeIcon icon={faLock} aria-hidden='true' />}
                 autoComplete='new-password'
                 placeholder={
-                  serverControlApiKeyConfigured
-                    ? '••••••••••••••••'
-                    : tExt('settings.enterServerControlApiKey', {})
+                  serverControlApiKeyConfigured ? '••••••••••••••••' : tExt('settings.enterServerControlApiKey', {})
                 }
                 {...form.getInputProps('serverControlApiKey')}
               />
@@ -320,12 +358,7 @@ export default function ConfigurationPage() {
                   {...form.getInputProps('aiModel')}
                 />
 
-                <Group
-                  className='calagopus-chat-model-picker'
-                  align='flex-end'
-                  gap='xs'
-                  wrap='wrap'
-                >
+                <Group className='calagopus-chat-model-picker' align='flex-end' gap='xs' wrap='wrap'>
                   <Select
                     label={tExt('settings.availableModels', {})}
                     placeholder={
@@ -347,11 +380,7 @@ export default function ConfigurationPage() {
                     type='button'
                     variant='default'
                     loading={loadingModels}
-                    disabled={
-                      form.values.aiProvider !== 'ollama' &&
-                      !apiKeyConfigured &&
-                      !form.values.aiApiKey.trim()
-                    }
+                    disabled={form.values.aiProvider !== 'ollama' && !apiKeyConfigured && !form.values.aiApiKey.trim()}
                     onClick={() => void loadModels()}
                   >
                     {tExt('settings.loadModels', {})}
@@ -370,9 +399,7 @@ export default function ConfigurationPage() {
                 }
                 leftSection={<FontAwesomeIcon icon={faLock} aria-hidden='true' />}
                 autoComplete='new-password'
-                placeholder={
-                  apiKeyConfigured ? '••••••••••••••••' : tExt('settings.enterApiKey', {})
-                }
+                placeholder={apiKeyConfigured ? '••••••••••••••••' : tExt('settings.enterApiKey', {})}
                 {...form.getInputProps('aiApiKey')}
               />
 
@@ -391,9 +418,7 @@ export default function ConfigurationPage() {
                 {...form.getInputProps('aiSystemPrompt')}
               />
 
-              {!apiKeyConfigured &&
-                form.values.aiEnabled &&
-                form.values.aiProvider !== 'ollama' && (
+              {!apiKeyConfigured && form.values.aiEnabled && form.values.aiProvider !== 'ollama' && (
                 <Alert color='yellow' title={tExt('settings.apiKeyRequired', {})}>
                   {tExt('settings.apiKeyRequiredDescription', {})}
                 </Alert>
@@ -421,14 +446,8 @@ export default function ConfigurationPage() {
             </div>
           </Group>
           <SimpleGrid cols={{ base: 1, sm: 3 }} spacing='xs'>
-            <TokenUsageMetric
-              label={tExt('settings.inputTokens', {})}
-              value={tokenUsage.inputTokens}
-            />
-            <TokenUsageMetric
-              label={tExt('settings.outputTokens', {})}
-              value={tokenUsage.outputTokens}
-            />
+            <TokenUsageMetric label={tExt('settings.inputTokens', {})} value={tokenUsage.inputTokens} />
+            <TokenUsageMetric label={tExt('settings.outputTokens', {})} value={tokenUsage.outputTokens} />
             <TokenUsageMetric
               label={tExt('settings.totalTokens', {})}
               value={tokenUsage.inputTokens + tokenUsage.outputTokens}
@@ -456,7 +475,11 @@ export default function ConfigurationPage() {
               <div className='calagopus-chat-changelog-entry' key={entry.version}>
                 <Group justify='space-between' gap='xs' align='baseline'>
                   <Text fw={600}>{entry.version}</Text>
-                  {entry.date && <Text size='xs' c='dimmed'>{entry.date}</Text>}
+                  {entry.date && (
+                    <Text size='xs' c='dimmed'>
+                      {entry.date}
+                    </Text>
+                  )}
                 </Group>
                 <List size='sm' spacing='xs' mt='xs'>
                   {entry.changes.map((change, index) => (
@@ -475,7 +498,9 @@ export default function ConfigurationPage() {
 function TokenUsageMetric({ label, value }: { label: string; value: number }) {
   return (
     <Paper withBorder radius='sm' p='sm' className='calagopus-chat-token-metric'>
-      <Text size='xs' c='dimmed'>{label}</Text>
+      <Text size='xs' c='dimmed'>
+        {label}
+      </Text>
       <Text fw={700} size='lg' style={{ fontVariantNumeric: 'tabular-nums' }}>
         {Intl.NumberFormat().format(value)}
       </Text>

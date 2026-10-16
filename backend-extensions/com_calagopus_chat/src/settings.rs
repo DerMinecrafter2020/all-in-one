@@ -108,6 +108,28 @@ impl Default for AdvertisingSettings {
     }
 }
 
+#[derive(Clone, Copy, Debug, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ServerToolPagesSettings {
+    pub modpacks: bool,
+    pub mods: bool,
+    pub plugins: bool,
+    pub players: bool,
+    pub server_properties: bool,
+}
+
+impl Default for ServerToolPagesSettings {
+    fn default() -> Self {
+        Self {
+            modpacks: true,
+            mods: true,
+            plugins: true,
+            players: true,
+            server_properties: true,
+        }
+    }
+}
+
 #[derive(Clone, ToSchema, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ExtensionSettingsData {
@@ -122,6 +144,7 @@ pub struct ExtensionSettingsData {
     pub ai_server_power_enabled: bool,
     pub floating_widget_enabled: bool,
     pub advertising: AdvertisingSettings,
+    pub server_tool_pages: ServerToolPagesSettings,
 }
 
 impl Default for ExtensionSettingsData {
@@ -133,12 +156,13 @@ impl Default for ExtensionSettingsData {
             ai_model: "gpt-4o-mini".into(),
             ai_api_key: compact_str::CompactString::default(),
             ai_server_control_api_key: compact_str::CompactString::default(),
-            ai_system_prompt: "You are the Calagopus Chat assistant. Be helpful, clear, and concise."
+            ai_system_prompt: "You are the All-in-One assistant. Be helpful, clear, and concise."
                 .into(),
             ai_server_info_enabled: false,
             ai_server_power_enabled: false,
             floating_widget_enabled: true,
             advertising: AdvertisingSettings::default(),
+            server_tool_pages: ServerToolPagesSettings::default(),
         }
     }
 }
@@ -158,7 +182,6 @@ impl ExtensionSettingsData {
             && !self.ai_model.trim().is_empty()
             && !self.ai_base_url.trim().is_empty()
     }
-
 }
 
 fn is_https_url(value: &str) -> bool {
@@ -199,6 +222,10 @@ impl SettingsSerializeExt for ExtensionSettingsData {
             .write_raw_setting(
                 "advertising_config",
                 serde_json::to_string(&self.advertising)?,
+            )
+            .write_raw_setting(
+                "server_tool_pages_config",
+                serde_json::to_string(&self.server_tool_pages)?,
             );
 
         let serializer = serializer
@@ -258,6 +285,10 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
                     .unwrap_or_default();
                 advertising
             });
+        let server_tool_pages = deserializer
+            .take_raw_setting("server_tool_pages_config")
+            .and_then(|value| serde_json::from_str(value.as_str()).ok())
+            .unwrap_or_default();
 
         Ok(Box::new(ExtensionSettingsData {
             ai_enabled: deserializer
@@ -278,7 +309,7 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
             ai_system_prompt: deserializer
                 .take_raw_setting("ai_system_prompt")
                 .unwrap_or_else(|| {
-                    "You are the Calagopus Chat assistant. Be helpful, clear, and concise.".into()
+                    "You are the All-in-One assistant. Be helpful, clear, and concise.".into()
                 }),
             ai_server_info_enabled: deserializer
                 .take_raw_setting("ai_server_info_enabled")
@@ -293,6 +324,7 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
                 .and_then(|value| value.parse().ok())
                 .unwrap_or(true),
             advertising,
+            server_tool_pages,
         }))
     }
 }

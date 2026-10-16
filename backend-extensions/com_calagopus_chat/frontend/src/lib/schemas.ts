@@ -106,13 +106,19 @@ export const aiServerActionResponseSchema = z.object({
   status: aiServerActionSchema.shape.status,
 });
 
-export const aiProviderSchema = z.enum([
-  'openai_compatible',
-  'openrouter',
-  'anthropic',
-  'google_gemini',
-  'ollama',
-]);
+export const aiProviderSchema = z.enum(['openai_compatible', 'openrouter', 'anthropic', 'google_gemini', 'ollama']);
+
+export const serverToolPagesSchema = z.object({
+  modpacks: z.boolean(),
+  mods: z.boolean(),
+  plugins: z.boolean(),
+  players: z.boolean(),
+  serverProperties: z.boolean(),
+});
+
+export const serverToolPagesResponseSchema = z.object({
+  settings: serverToolPagesSchema,
+});
 
 export const adminSettingsSchema = z.object({
   aiEnabled: z.boolean(),
@@ -125,6 +131,7 @@ export const adminSettingsSchema = z.object({
   aiServerInfoEnabled: z.boolean(),
   aiServerPowerEnabled: z.boolean(),
   floatingWidgetEnabled: z.boolean(),
+  serverToolPages: serverToolPagesSchema,
 });
 
 export const tokenUsageSchema = z.object({
@@ -163,48 +170,45 @@ export const advertisingSettingsSchema = z.object({
   }),
 });
 
-export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRefine(
-  (settings, context) => {
-    const validateHttpsUrl = (path: (string | number)[], value: string) => {
-      let validHttpsUrl = false;
-      try {
-        const url = new URL(value);
-        validHttpsUrl =
-          url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;
-      } catch {
-        // The field-specific issue below reports invalid or non-HTTPS URLs.
-      }
-      if (!validHttpsUrl) {
-        context.addIssue({
-          code: 'custom',
-          path,
-          message: 'Enter a valid HTTPS URL.',
-        });
-      }
-    };
-
-    for (const slotName of advertisingSlotNameSchema.options) {
-      const slot = settings.slots[slotName];
-      if (!slot.enabled) continue;
-
-      if (slot.mode === 'sandboxed_iframe') {
-        validateHttpsUrl(['slots', slotName, 'customAdIframeUrl'], slot.customAdIframeUrl);
-        continue;
-      }
-
-      validateHttpsUrl(['slots', slotName, 'customAdImageUrl'], slot.customAdImageUrl);
-      validateHttpsUrl(['slots', slotName, 'customAdTargetUrl'], slot.customAdTargetUrl);
-
-      if (!slot.customAdAltText.trim()) {
-        context.addIssue({
-          code: 'custom',
-          path: ['slots', slotName, 'customAdAltText'],
-          message: 'Alternative text is required for the banner image.',
-        });
-      }
+export const updateAdvertisingSettingsSchema = advertisingSettingsSchema.superRefine((settings, context) => {
+  const validateHttpsUrl = (path: (string | number)[], value: string) => {
+    let validHttpsUrl = false;
+    try {
+      const url = new URL(value);
+      validHttpsUrl = url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;
+    } catch {
+      // The field-specific issue below reports invalid or non-HTTPS URLs.
     }
-  },
-);
+    if (!validHttpsUrl) {
+      context.addIssue({
+        code: 'custom',
+        path,
+        message: 'Enter a valid HTTPS URL.',
+      });
+    }
+  };
+
+  for (const slotName of advertisingSlotNameSchema.options) {
+    const slot = settings.slots[slotName];
+    if (!slot.enabled) continue;
+
+    if (slot.mode === 'sandboxed_iframe') {
+      validateHttpsUrl(['slots', slotName, 'customAdIframeUrl'], slot.customAdIframeUrl);
+      continue;
+    }
+
+    validateHttpsUrl(['slots', slotName, 'customAdImageUrl'], slot.customAdImageUrl);
+    validateHttpsUrl(['slots', slotName, 'customAdTargetUrl'], slot.customAdTargetUrl);
+
+    if (!slot.customAdAltText.trim()) {
+      context.addIssue({
+        code: 'custom',
+        path: ['slots', slotName, 'customAdAltText'],
+        message: 'Alternative text is required for the banner image.',
+      });
+    }
+  }
+});
 
 export const advertisingSettingsResponseSchema = z.object({
   settings: advertisingSettingsSchema,
@@ -231,6 +235,7 @@ export const updateAdminSettingsSchema = z.object({
   aiServerInfoEnabled: z.boolean(),
   aiServerPowerEnabled: z.boolean(),
   floatingWidgetEnabled: z.boolean(),
+  serverToolPages: serverToolPagesSchema,
   clearServerControlApiKey: z.boolean(),
   clearApiKey: z.boolean(),
 });
@@ -241,6 +246,7 @@ export type ChatServerOption = z.infer<typeof chatServerOptionSchema>;
 export type ChatServerResources = z.infer<typeof chatServerResourcesSchema>;
 export type AiProvider = z.infer<typeof aiProviderSchema>;
 export type TokenUsage = z.infer<typeof tokenUsageSchema>;
+export type ServerToolPages = z.infer<typeof serverToolPagesSchema>;
 export type AiServerAction = z.infer<typeof aiServerActionSchema>;
 export type ChatMessage = z.infer<typeof messageSchema>;
 export type ChatUser = z.infer<typeof userSummarySchema>;
