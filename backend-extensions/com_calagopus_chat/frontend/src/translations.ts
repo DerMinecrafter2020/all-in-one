@@ -263,7 +263,6 @@ const translations = defineTranslations({
       temporaryCleanupFailed: 'The install completed, but its temporary staging folder could not be removed. Check the server files and delete the Calagopus Chat staging folder manually.',
       operationTimedOut: 'The Panel file operation timed out. Temporary files were kept because the operation may still be running; check the server files before retrying.',
       close: 'Close',
-      playersTitle: 'Player manager',
       onlinePlayers: 'Online players',
       refreshPlayers: 'Refresh list',
       loadingPlayers: 'Waiting for the server response…',

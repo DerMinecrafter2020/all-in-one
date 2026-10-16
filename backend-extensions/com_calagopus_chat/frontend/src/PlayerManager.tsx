@@ -118,7 +118,9 @@ export default function PlayerManager({
   useEffect(() => {
     if (!socketInstance) return;
     socketInstance.addListener(SocketEvent.CONSOLE_OUTPUT, onConsoleOutput);
-    return () => socketInstance.removeListener(SocketEvent.CONSOLE_OUTPUT, onConsoleOutput);
+    return () => {
+      socketInstance.removeListener(SocketEvent.CONSOLE_OUTPUT, onConsoleOutput);
+    };
   }, [onConsoleOutput, socketInstance]);
 
   useEffect(
