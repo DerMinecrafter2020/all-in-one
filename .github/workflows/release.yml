@@ -322,7 +322,7 @@ jobs:
 
           source_dir="backend-extensions/com_calagopus_chat"
           stage_dir="$RUNNER_TEMP/com_calagopus_chat"
-          archive="$GITHUB_WORKSPACE/com_calagopus_chat.c7s.zip"
+          archive="$GITHUB_WORKSPACE/All-in-One.c7s.zip"
 
           mkdir -p "$stage_dir/backend" "$stage_dir/frontend" "$stage_dir/migrations"
           cp "$source_dir/Metadata.toml" "$stage_dir/Metadata.toml"
@@ -384,7 +384,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           body_path: ${{ steps.changelog.outputs.path }}
           generate_release_notes: true
-          files: com_calagopus_chat.c7s.zip
+          files: All-in-One.c7s.zip
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -73,7 +73,7 @@ Before preparing or pushing release changes, inspect both local and remote tags 
 
 ## GitHub release and `.c7s.zip`
 
-The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master`. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.5 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `com_calagopus_chat.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
+The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master`. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.5 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
 
 On a branch push, if `v<package version>` already exists remotely, the workflow deliberately skips both preflight and release to avoid duplicate releases. It does not update or recreate the existing release from newer branch commits. Bump to the next unused version before pushing those changes.
 
@@ -83,7 +83,7 @@ For an automatic release:
 2. Update both package version fields to the same unused version and commit the changes.
 3. Push the commit to `main` or `master`. The workflow derives the `vMAJOR.MINOR.PATCH` tag and creates the GitHub Release after preflight succeeds. A regular code push without a version bump will not create a release.
 
-4. Check the repository's **Actions** tab. When the workflow succeeds, download the `.c7s.zip` from the generated GitHub Release.
+4. Check the repository's **Actions** tab. When the workflow succeeds, download `All-in-One.c7s.zip` from the generated GitHub Release.
 
 To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.7`.
 
@@ -99,7 +99,7 @@ For manual export from the Panel repository, use the official command from the P
 panel-rs extensions export com.calagopus.chat
 ```
 
-It writes `exported-extensions/com_calagopus_chat.c7s.zip`. See the [official extension release guide](https://calagopus.com/docs/panel/extensions/getting-your-extension-ready) for pre-export checks and details.
+The native Panel exporter names its local file from the stable package ID (`exported-extensions/com_calagopus_chat.c7s.zip`); the GitHub Release asset is `All-in-One.c7s.zip`. See the [official extension release guide](https://calagopus.com/docs/panel/extensions/getting-your-extension-ready) for pre-export checks and details.
 
 ## Automatic commit policy
 
