@@ -68,6 +68,7 @@ function ServerToolPage({ page }: Props) {
     false,
   );
   const canReadConsole = useServerCan(['control.read-console', 'control.console'], false);
+  const canReadConsoleOutput = useServerCan('control.read-console');
   const canSendCommands = useServerCan('control.console');
   const canReadFileContents = useServerCan('files.read-content');
   const canWriteFiles = useServerCan('files.create');
@@ -165,6 +166,7 @@ function ServerToolPage({ page }: Props) {
         {page === 'players' && (
           <PlayerManager
             canReadConsole={canReadConsole}
+            canReadConsoleOutput={canReadConsoleOutput}
             canSendCommands={canSendCommands}
             canReadFiles={canReadFileContents}
             serverUuid={server.uuid}

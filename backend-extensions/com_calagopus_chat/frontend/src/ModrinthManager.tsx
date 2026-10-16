@@ -95,6 +95,7 @@ export default function ModrinthManager({
   const selectedFile = selectedVersion ? getInstallFile(selectedVersion, kind) : null;
   const isModpack = kind === 'modpack';
   const isPlugin = kind === 'plugin';
+  const requiresStoppedServer = !isPlugin;
   const progressLabels: Record<ModpackInstallProgress['stage'], string> = {
     download: t('tools.progress.download', {}),
     extract: t('tools.progress.extract', {}),
@@ -167,7 +168,7 @@ export default function ModrinthManager({
       addToast(t('tools.filePermissionRequired', {}), 'error');
       return;
     }
-    if (!serverStopped) {
+    if (requiresStoppedServer && !serverStopped) {
       addToast(t('tools.serverMustBeOffline', {}), 'error');
       return;
     }
@@ -239,7 +240,8 @@ export default function ModrinthManager({
       </div>
 
       {!canInstall && <Alert color='yellow'>{t('tools.filePermissionRequired', {})}</Alert>}
-      {!serverStopped && <Alert color='yellow'>{t('tools.serverMustBeOffline', {})}</Alert>}
+      {requiresStoppedServer && !serverStopped && <Alert color='yellow'>{t('tools.serverMustBeOffline', {})}</Alert>}
+      {isPlugin && <Alert color='yellow'>{t('tools.pluginInstallRestartWarning', {})}</Alert>}
       {!socketConnected && <Alert color='yellow'>{t('tools.websocketRequired', {})}</Alert>}
       {installSummary && <Alert color='green'>{installSummary}</Alert>}
 
@@ -391,7 +393,11 @@ export default function ModrinthManager({
                 </Text>
               )}
               <Alert color='yellow'>
-                {isModpack ? t('tools.modpackInstallWarning', {}) : t('tools.singleFileInstallWarning', {})}
+                {isModpack
+                  ? t('tools.modpackInstallWarning', {})
+                  : isPlugin
+                    ? t('tools.pluginInstallRestartWarning', {})
+                    : t('tools.singleFileInstallWarning', {})}
               </Alert>
               {progress && (
                 <Text size='sm' c='dimmed'>
@@ -408,7 +414,13 @@ export default function ModrinthManager({
                 </Button>
                 <Button
                   loading={installLoading}
-                  disabled={!selectedFile || !canInstall || !serverStopped || !socketConnected || !socketInstance}
+                  disabled={
+                    !selectedFile ||
+                    !canInstall ||
+                    (requiresStoppedServer && !serverStopped) ||
+                    !socketConnected ||
+                    !socketInstance
+                  }
                   leftSection={<FontAwesomeIcon icon={faDownload} />}
                   onClick={() => void startInstall()}
                 >

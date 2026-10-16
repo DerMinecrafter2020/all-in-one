@@ -47,6 +47,7 @@ interface InventoryItem {
 
 interface Props {
   canReadConsole: boolean;
+  canReadConsoleOutput: boolean;
   canSendCommands: boolean;
   canReadFiles: boolean;
   serverUuid: string;
@@ -85,6 +86,19 @@ function parseTps(line: string): number[] | null {
   const values = plainText.slice(colon + 1).match(/\d+(?:\.\d+)?/g);
   if (!values?.length) return null;
   return values.slice(0, 3).map(Number);
+}
+
+function parseNonWhitelistedAttempt(line: string): string | null {
+  const plainText = stripAnsi(line);
+  if (!/not\s+(?:white[\s-]?listed|on\s+(?:the\s+)?whitelist)/i.test(plainText)) return null;
+
+  const candidates = [
+    plainText.match(/\bname\s*=\s*["']?([A-Za-z0-9_]{3,16})\b/i)?.[1],
+    plainText.match(/\bdisconnecting\s+([A-Za-z0-9_]{3,16})\s*(?=[(:])/i)?.[1],
+    plainText.match(/\b([A-Za-z0-9_]{3,16})\s+(?:is|was)\s+not\s+(?:white[\s-]?listed|on\s+(?:the\s+)?whitelist)/i)?.[1],
+  ];
+
+  return candidates.find((candidate) => candidate && PLAYER_NAME_PATTERN.test(candidate)) ?? null;
 }
 
 function parsePlayerRecords(json: string): PlayerRecord[] {
@@ -197,6 +211,7 @@ function buildCommand(action: PlayerAction, username: string): string {
 
 export default function PlayerManagerPage({
   canReadConsole,
+  canReadConsoleOutput,
   canSendCommands,
   canReadFiles,
   serverUuid,
@@ -208,6 +223,7 @@ export default function PlayerManagerPage({
   const { addToast } = useToast();
   const [players, setPlayers] = useState<string[]>([]);
   const [playersLoaded, setPlayersLoaded] = useState(false);
+  const [nonWhitelistedAttempts, setNonWhitelistedAttempts] = useState<string[]>([]);
   const [maxPlayers, setMaxPlayers] = useState<number | null>(null);
   const [tps, setTps] = useState<number[] | null>(null);
   const [tpsLoading, setTpsLoading] = useState(false);
@@ -309,6 +325,14 @@ export default function PlayerManagerPage({
 
   const onConsoleOutput = useCallback((line: string) => {
     const plainText = stripAnsi(line);
+    const rejectedPlayer = parseNonWhitelistedAttempt(plainText);
+    if (rejectedPlayer) {
+      setNonWhitelistedAttempts((current) => [
+        rejectedPlayer,
+        ...current.filter((name) => name.toLowerCase() !== rejectedPlayer.toLowerCase()),
+      ].slice(0, 20));
+    }
+
     const onlineResponse = parseOnlinePlayers(plainText);
     if (onlineResponse && responsePending.current) {
       responsePending.current = false;
@@ -448,6 +472,9 @@ export default function PlayerManagerPage({
   };
 
   const validUsername = PLAYER_NAME_PATTERN.test(username.trim());
+  const unlistedAttempts = nonWhitelistedAttempts.filter(
+    (name) => !whitelistedPlayers.some((record) => record.name.toLowerCase() === name.toLowerCase()),
+  );
 
   return (
     <Stack gap='md'>
@@ -458,10 +485,42 @@ export default function PlayerManagerPage({
       </div>
 
       {!canReadConsole && <Alert color='yellow'>{t('tools.playerReadPermissionRequired', {})}</Alert>}
+      {!canReadConsoleOutput && <Alert color='yellow'>{t('tools.playerAttemptsPermissionRequired', {})}</Alert>}
       {!canSendCommands && <Alert color='yellow'>{t('tools.playerCommandPermissionRequired', {})}</Alert>}
       {!canReadFiles && <Alert color='yellow'>{t('tools.playerListsUnavailable', {})}</Alert>}
       {!serverRunning && <Alert color='yellow'>{t('tools.playerServerMustRun', {})}</Alert>}
       {serverRunning && !socketConnected && <Alert color='yellow'>{t('tools.websocketRequired', {})}</Alert>}
+
+      <Card withBorder padding='md' radius='md'>
+        <Stack gap='sm'>
+          <div>
+            <Text fw={600}>{t('tools.nonWhitelistedAttempts', {})}</Text>
+            <Text size='xs' c='dimmed'>
+              {t('tools.nonWhitelistedAttemptsDescription', {})}
+            </Text>
+          </div>
+          {!canReadConsoleOutput ? (
+            <Text size='sm' c='dimmed'>{t('tools.playerAttemptsPermissionRequired', {})}</Text>
+          ) : unlistedAttempts.length === 0 ? (
+            <Text size='sm' c='dimmed'>{t('tools.noNonWhitelistedAttempts', {})}</Text>
+          ) : (
+            <Group gap='xs' wrap='wrap'>
+              {unlistedAttempts.map((player) => (
+                <Button
+                  key={player}
+                  size='xs'
+                  color='red'
+                  variant='light'
+                  disabled={!canSendCommands || !serverRunning || !socketConnected}
+                  onClick={() => requestAction('ban', player)}
+                >
+                  {t('tools.banAttemptingPlayer', { username: player })}
+                </Button>
+              ))}
+            </Group>
+          )}
+        </Stack>
+      </Card>
 
       <Card withBorder padding='md' radius='md'>
         <Stack gap='sm'>

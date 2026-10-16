@@ -8,6 +8,7 @@
 - Added a `server.properties` editor that offers to start or restart the server after saving.
 - Reworked the properties editor into individual fields, added a separate Admin sidebar page for each server-tool setting, and added a demo advertising preview.
 - Added a German locale for all extension UI strings and included locale files in the release archive.
+- Allowed new plugin JARs to be installed while the server is running and added console-detected, whitelist-rejected connection attempts to the ban workflow.
 
 ## 0.2.6 — 2026-10-15
 - Added a permission-gated server-tools page with Modrinth search and installers for server-side mods, plugins, and `.mrpack` modpacks.

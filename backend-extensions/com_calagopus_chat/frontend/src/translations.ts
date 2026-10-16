@@ -304,6 +304,8 @@ const translations = defineTranslations({
       websocketRequired: 'A connected server WebSocket is required to track the Panel file operations safely.',
       singleFileInstallWarning:
         'This adds the selected JAR to the chosen folder and never overwrites an existing file. The server must be stopped and restarted after installation. Confirm the selected loader and Minecraft version match this server.',
+      pluginInstallRestartWarning:
+        'Plugin JARs can be copied while the server is running, but Minecraft loads new plugins only at startup. Start or restart the server to activate the plugin; existing files are never overwritten.',
       modpackInstallWarning:
         'The server must be stopped. The pack’s Minecraft version and loader must already be installed; they will not be changed automatically. Existing files are preserved and conflicts are skipped. The common overrides mods/ folder and client-only options/resource packs are skipped; use server-overrides for dedicated-server files.',
       installProgress: '{stage} ({current}/{total})',
@@ -371,6 +373,12 @@ const translations = defineTranslations({
       refreshServerStats: 'Refresh players and TPS',
       readPlayerLists: 'Load player lists',
       playerListsUnavailable: 'Reading ban, whitelist, and operator lists requires files.read-content.',
+      nonWhitelistedAttempts: 'Non-whitelisted connection attempts',
+      nonWhitelistedAttemptsDescription:
+        'Recent join attempts rejected by the whitelist are detected from console output while this page is open.',
+      noNonWhitelistedAttempts: 'No non-whitelisted attempts have been detected in this session.',
+      playerAttemptsPermissionRequired: 'Detecting rejected join attempts requires control.read-console.',
+      banAttemptingPlayer: 'Ban {username}',
       noBannedPlayers: 'No banned players.',
       noWhitelistedPlayers: 'No whitelisted players.',
       noOperators: 'No operators.',
