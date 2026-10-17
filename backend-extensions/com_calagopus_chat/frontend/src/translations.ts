@@ -582,6 +582,39 @@ const translations = defineTranslations({
       replaceInstalledFileWarning:
         'Replace {file} with version {version}? The old JAR is replaced only after the new file has been staged.',
       installedFileUpdated: 'Updated {file}.',
+      modpackAlreadyManaged: 'This modpack is already tracked. Open the Installed tab to update or remove it.',
+      modpackInstalledButUntracked:
+        'The modpack files were installed, but All-in-One could not fully save its management record. Files not listed there will be left untouched by update or removal; review the server files before retrying.',
+      installedModpacksTitle: '{count} managed modpacks',
+      installedModpacksEmpty:
+        'No modpacks installed through this manager were found. Modpacks installed elsewhere are not tracked here.',
+      installedModpacksPermissionRequired: 'Viewing managed modpacks requires files.read and files.read-content.',
+      installedModpackDeletePermissionRequired: 'Removing a managed modpack requires files.delete.',
+      searchInstalledModpacks: 'Search installed modpacks',
+      searchInstalledModpacksPlaceholder: 'Filter by pack name, author, or version…',
+      refreshInstalledModpacks: 'Refresh modpacks',
+      managedModpackFiles: '{count} managed files',
+      managedModpackDetails: 'Version {version} · {count} managed files',
+      checkForModpackUpdate: 'Check for updates',
+      removeInstalledModpack: 'Remove modpack',
+      confirmRemoveInstalledModpack: 'Remove managed modpack?',
+      confirmRemoveInstalledModpackDescription:
+        'Remove {title} and its {count} tracked server files? This cannot be undone.',
+      removeModpackTrackedFilesWarning:
+        'Only files recorded as installed by All-in-One are removed; files that already existed during installation were never tracked. Tracked files changed later are still removed.',
+      modpackRemoved: 'Removed {title} and its tracked files.',
+      updateInstalledModpack: 'Update modpack',
+      currentInstalledModpack: '{title} is currently on version {version}.',
+      updateModpackVersion: 'New modpack version',
+      modpackUpdateWarning:
+        'Update {title} from {oldVersion} to {newVersion}? Any later edits to files tracked as installed by All-in-One will be replaced. Existing conflicts stay untouched; tracked files no longer in the new pack are removed after installation.',
+      modpackUpdated: 'Updated {title} to version {version}.',
+      modpackUpdatedOldFilesRemain:
+        'The new version was installed, but old-file cleanup or registry finalization did not finish. Both versions remain tracked so you can safely retry or remove the pack.',
+      modpackUpdatePartial:
+        'The update finished, but {count} tracked files could not be copied. The previous versions of those files remain managed.',
+      modpackRegistryNote:
+        'This list contains modpacks installed through All-in-One. Packs installed manually or by another tool are not tracked and will not be changed here.',
     },
   },
 });

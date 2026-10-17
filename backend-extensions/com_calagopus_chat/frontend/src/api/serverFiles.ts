@@ -9,6 +9,7 @@ import statFiles from '@/api/server/files/statFiles.ts';
 import { SocketEvent } from '@/plugins/websocket/useWebsocketEvent.ts';
 import type { Websocket } from '@/plugins/websocket/Websocket.ts';
 import type { ModrinthVersionFile } from './modrinth.ts';
+import { isReservedModpackPath, validateManagedModpackPath } from './modrinthModpacks.ts';
 
 const OPERATION_TIMEOUT_MS = 30 * 60 * 1000;
 const MAX_MRPACK_MANIFEST_BYTES = 4 * 1024 * 1024;
@@ -192,42 +193,91 @@ async function copyStagedFiles(
   files: OverrideFile[],
   overwrite = false,
 ): Promise<number> {
-  if (!files.length) return 0;
+  return (await copyStagedFilesDetailed(uuid, socket, files, overwrite)).skipped;
+}
+
+async function copyStagedFilesDetailed(
+  uuid: string,
+  socket: Websocket,
+  files: OverrideFile[],
+  overwrite = false,
+  onCopiedPaths?: (paths: string[]) => Promise<void>,
+): Promise<{ skipped: number; copiedPaths: string[]; skippedPaths: string[] }> {
+  if (!files.length) return { skipped: 0, copiedPaths: [], skippedPaths: [] };
 
   const normalizedFiles = files.map((file) => ({
     relativePath: validateRelativePath(file.relativePath),
     sourcePath: pathSegments(file.sourcePath).join('/'),
+    overwrite: overwrite || Boolean(file.overwrite),
   }));
-  const { data } = await axiosInstance.post(`/api/client/servers/${uuid}/files/copy-many`, {
-    root: '/',
-    files: normalizedFiles.map((file) => ({ from: file.sourcePath, to: file.relativePath })),
-    overwrite,
-  });
-
-  await runPanelFileOperation(socket, async () => data.identifier);
-
-  const byDirectory = new Map<string, Set<string>>();
+  const byDirectory = new Map<string, Array<(typeof normalizedFiles)[number] & { directory: string; name: string }>>();
   for (const file of normalizedFiles) {
     const { directory, name } = splitServerPath(`/${file.relativePath}`);
-    const names = byDirectory.get(directory) ?? new Set<string>();
-    names.add(name);
-    byDirectory.set(directory, names);
+    const key = `${directory}\0${file.overwrite ? 'overwrite' : 'create'}`;
+    const group = byDirectory.get(key) ?? [];
+    group.push({ ...file, directory, name });
+    byDirectory.set(key, group);
   }
 
-  let missing = 0;
-  for (const [directory, names] of byDirectory) {
-    try {
-      const entries = await statFiles(uuid, directory, [...names]);
-      const present = new Set(entries.map((entry) => entry.name));
-      missing += [...names].filter((name) => !present.has(name)).length;
-    } catch (error) {
-      if (hasHttpStatus(error, 404)) missing += names.size;
-      else throw error;
+  let skipped = 0;
+  const copiedPaths: string[] = [];
+  const skippedPaths: string[] = [];
+  for (const group of byDirectory.values()) {
+    const directory = group[0].directory;
+    const names = group.map((file) => file.name);
+    const { data } = await axiosInstance.post(`/api/client/servers/${uuid}/files/copy-many`, {
+      root: '/',
+      files: group.map((file) => ({ from: file.sourcePath, to: file.relativePath })),
+      overwrite: group[0].overwrite,
+    });
+    await runPanelFileOperation(socket, async () => data.identifier);
+
+    const skippedEntries: unknown[] = Array.isArray(data.skipped) ? data.skipped : [];
+    const skippedInGroup = new Set<string>();
+    let skippedNameWasAmbiguous = false;
+    for (const entry of skippedEntries) {
+      const skippedName =
+        typeof entry === 'object' && entry !== null && 'name' in entry && typeof entry.name === 'string'
+          ? entry.name
+          : '';
+      const matchingFiles = group.filter(
+        (file) =>
+          skippedName === file.name ||
+          skippedName === file.relativePath ||
+          skippedName.endsWith(`/${file.relativePath}`) ||
+          skippedName.endsWith(`/${file.name}`),
+      );
+      if (matchingFiles.length === 1) skippedInGroup.add(matchingFiles[0].relativePath);
+      else skippedNameWasAmbiguous = true;
     }
+
+    let presentNames = new Set<string>();
+    try {
+      const entries = await statFiles(uuid, directory, names);
+      presentNames = new Set(entries.filter((entry) => entry.file && !entry.symlink).map((entry) => entry.name));
+    } catch (error) {
+      if (!hasHttpStatus(error, 404)) throw error;
+    }
+
+    const missingPaths = group.filter((file) => !presentNames.has(file.name)).map((file) => file.relativePath);
+    if (skippedNameWasAmbiguous && skippedEntries.length > 0) {
+      skippedInGroup.clear();
+      for (const file of group) skippedInGroup.add(file.relativePath);
+    } else {
+      for (const path of missingPaths) skippedInGroup.add(path);
+    }
+    skipped += skippedInGroup.size;
+    skippedPaths.push(...skippedInGroup);
+
+    for (const file of group) {
+      if (presentNames.has(file.name) && !skippedInGroup.has(file.relativePath)) {
+        copiedPaths.push(file.relativePath);
+      }
+    }
+    if (onCopiedPaths && copiedPaths.length > 0) await onCopiedPaths([...copiedPaths]);
   }
 
-  const reportedSkipped = Array.isArray(data.skipped) ? data.skipped.length : 0;
-  return Math.min(normalizedFiles.length, reportedSkipped + missing);
+  return { skipped, copiedPaths, skippedPaths };
 }
 
 export async function installModrinthFile(
@@ -328,6 +378,7 @@ interface Manifest {
 interface OverrideFile {
   relativePath: string;
   sourcePath: string;
+  overwrite?: boolean;
 }
 
 interface PlannedInstall {
@@ -335,6 +386,7 @@ interface PlannedInstall {
   path: string;
   url?: string;
   sourcePath?: string;
+  overwrite?: boolean;
 }
 
 export interface ModpackInstallProgress {
@@ -347,7 +399,14 @@ export interface ModpackInstallResult {
   installed: number;
   skipped: number;
   dependencies: Record<string, string>;
+  managedFiles: string[];
+  failedManagedUpdates: string[];
   cleanupFailed: boolean;
+}
+
+export interface ModpackInstallOptions {
+  managedFiles?: string[];
+  onManagedFilesCopied?: (paths: string[]) => Promise<void>;
 }
 
 function validateRelativePath(value: unknown): string {
@@ -421,6 +480,7 @@ function shouldSkipOverride(relativePath: string, allowServerMods: boolean): boo
   const lower = relativePath.toLowerCase();
   const first = lower.split('/')[0];
   return (
+    isReservedModrinthModpackPath(relativePath) ||
     (!allowServerMods && first === 'mods') ||
     first === 'resourcepacks' ||
     first === 'shaderpacks' ||
@@ -431,11 +491,16 @@ function shouldSkipOverride(relativePath: string, allowServerMods: boolean): boo
   );
 }
 
+function isReservedModrinthModpackPath(relativePath: string): boolean {
+  return isReservedModpackPath(relativePath);
+}
+
 export async function installModrinthModpack(
   uuid: string,
   socket: Websocket,
   file: ModrinthVersionFile,
   onProgress: (progress: ModpackInstallProgress) => void,
+  options: ModpackInstallOptions = {},
 ): Promise<ModpackInstallResult> {
   if (!file.filename.toLowerCase().endsWith('.mrpack')) {
     throw new Error('The selected Modrinth version does not contain an .mrpack file.');
@@ -452,6 +517,7 @@ export async function installModrinthModpack(
   let result: Omit<ModpackInstallResult, 'cleanupFailed'> | undefined;
   let cleanupFailed = false;
   let optionalSkipped = 0;
+  const previouslyManaged = new Set((options.managedFiles ?? []).map(validateManagedModpackPath));
 
   try {
     await createDirectory(uuid, '/', stageName);
@@ -510,6 +576,10 @@ export async function installModrinthModpack(
       }
 
       const targetPath = validateRelativePath(packFile?.path);
+      if (isReservedModrinthModpackPath(targetPath)) {
+        optionalSkipped += 1;
+        continue;
+      }
       if (!Array.isArray(packFile.downloads) || packFile.downloads.length === 0) {
         throw new Error(`The server modpack file ${targetPath} has no download URL.`);
       }
@@ -576,11 +646,18 @@ export async function installModrinthModpack(
       const existing = await getPathEntry(uuid, directory, name);
 
       if (existing) {
-        skipped += 1;
-        continue;
+        if (previouslyManaged.has(relativePath)) {
+          if (!existing.file || existing.directory || existing.symlink) {
+            throw new Error(`The tracked modpack path ${relativePath} is no longer a regular file.`);
+          }
+          ready.push({ ...item, path: relativePath, overwrite: true });
+        } else {
+          skipped += 1;
+        }
+      } else {
+        ready.push({ ...item, path: relativePath, overwrite: false });
       }
 
-      ready.push({ ...item, path: relativePath });
       onProgress({ stage: 'prepare', current: ready.length + skipped, total: planned.size });
     }
 
@@ -608,18 +685,36 @@ export async function installModrinthModpack(
         ...downloads.map((item) => ({
           relativePath: item.path,
           sourcePath: `${stagePath}/downloads/${item.path}`,
+          overwrite: item.overwrite,
         })),
         ...overrides.map((item) => ({
           relativePath: item.path,
           sourcePath: item.sourcePath!,
+          overwrite: item.overwrite,
         })),
       ];
-      const copySkipped = await copyStagedFiles(uuid, socket, stagedFiles);
-      skipped += copySkipped;
-      installed += Math.max(0, stagedFiles.length - copySkipped);
+      const copyResult = await copyStagedFilesDetailed(uuid, socket, stagedFiles, false, async (copiedPaths) => {
+        if (options.onManagedFilesCopied) {
+          await options.onManagedFilesCopied([...new Set([...previouslyManaged, ...copiedPaths])].sort());
+        }
+      });
+      skipped += copyResult.skipped;
+      installed += copyResult.copiedPaths.length;
+      const managedFiles = new Set(copyResult.copiedPaths);
+      const failedManagedUpdates = copyResult.skippedPaths.filter((path) => previouslyManaged.has(path));
+      for (const item of ready) {
+        if (item.overwrite && previouslyManaged.has(item.path)) managedFiles.add(item.path);
+      }
+      result = {
+        installed,
+        skipped,
+        dependencies,
+        managedFiles: [...managedFiles].sort(),
+        failedManagedUpdates,
+      };
+    } else {
+      result = { installed, skipped, dependencies, managedFiles: [], failedManagedUpdates: [] };
     }
-
-    result = { installed, skipped, dependencies };
   } catch (error) {
     failure = error;
     if (error instanceof PanelFileOperationTimeoutError) safeToCleanup = false;

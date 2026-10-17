@@ -134,6 +134,7 @@ function ServerToolPage({ page }: Props) {
             kind='modpack'
             serverUuid={server.uuid}
             canReadFiles={canReadServerFiles}
+            canReadFileContents={canReadFileContents}
             canDeleteFiles={canDeleteServerFiles}
             canInstall={canInstallModpack}
             serverStopped={serverStopped}
@@ -148,6 +149,7 @@ function ServerToolPage({ page }: Props) {
             kind='mod'
             serverUuid={server.uuid}
             canReadFiles={canReadServerFiles}
+            canReadFileContents={canReadFileContents}
             canDeleteFiles={canDeleteServerFiles}
             targetFolder='/mods'
             loaderOptions={MOD_LOADERS}
@@ -164,6 +166,7 @@ function ServerToolPage({ page }: Props) {
             kind='plugin'
             serverUuid={server.uuid}
             canReadFiles={canReadServerFiles}
+            canReadFileContents={canReadFileContents}
             canDeleteFiles={canDeleteServerFiles}
             targetFolder='/plugins'
             loaderOptions={PLUGIN_LOADERS}

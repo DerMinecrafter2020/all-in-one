@@ -23,7 +23,13 @@ import type { Websocket } from '@/plugins/websocket/Websocket.ts';
 import { useToast } from '@/providers/ToastProvider.tsx';
 import type { ModrinthProject, ModrinthSearchIndex, ModrinthVersion, ModrinthVersionFile } from './api/modrinth.ts';
 import { getModrinthVersions, searchModrinthProjects } from './api/modrinth.ts';
-import type { ModpackInstallProgress } from './api/serverFiles.ts';
+import type { ManagedModrinthModpack } from './api/modrinthModpacks.ts';
+import {
+  deleteManagedModrinthModpackRecord,
+  getManagedModrinthModpack,
+  saveManagedModrinthModpack,
+} from './api/modrinthModpacks.ts';
+import type { ModpackInstallProgress, ModpackInstallResult } from './api/serverFiles.ts';
 import {
   installModrinthFile,
   installModrinthModpack,
@@ -31,6 +37,7 @@ import {
   validateModrinthDownloadUrl,
 } from './api/serverFiles.ts';
 import InstalledModrinthFiles from './InstalledModrinthFiles.tsx';
+import InstalledModrinthModpacks from './InstalledModrinthModpacks.tsx';
 import { useExtTranslations } from './translations.ts';
 
 export type ModrinthManagerKind = 'mod' | 'plugin' | 'modpack';
@@ -46,6 +53,7 @@ interface Props {
   targetFolder?: '/mods' | '/plugins';
   loaderOptions?: LoaderOption[];
   canReadFiles: boolean;
+  canReadFileContents: boolean;
   canDeleteFiles: boolean;
   canInstall: boolean;
   serverStopped: boolean;
@@ -86,6 +94,7 @@ export default function ModrinthManager({
   targetFolder,
   loaderOptions = [],
   canReadFiles,
+  canReadFileContents,
   canDeleteFiles,
   canInstall,
   serverStopped,
@@ -220,8 +229,67 @@ export default function ModrinthManager({
       setInstallSummary(null);
 
       if (isModpack) {
+        if (!selectedProject || !selectedVersion) throw new Error('Select a modpack project and version first.');
+        const existingRecord = await getManagedModrinthModpack(serverUuid, selectedProject.project_id);
+        if (existingRecord) throw new Error(t('tools.modpackAlreadyManaged', {}));
+
+        let record: ManagedModrinthModpack = {
+          schemaVersion: 1,
+          projectId: selectedProject.project_id,
+          slug: selectedProject.slug,
+          title: selectedProject.title,
+          description: selectedProject.description,
+          author: selectedProject.author,
+          iconUrl: selectedProject.icon_url ?? null,
+          categories: selectedProject.categories,
+          versionId: selectedVersion.id,
+          versionNumber: selectedVersion.version_number,
+          gameVersions: selectedVersion.game_versions,
+          loaders: selectedVersion.loaders,
+          installedAt: new Date().toISOString(),
+          managedFiles: [],
+        };
+        await saveManagedModrinthModpack(serverUuid, record);
         setProgress({ stage: 'download', current: 0, total: 1 });
-        const result = await installModrinthModpack(serverUuid, socketInstance, selectedFile, setProgress);
+        let result: ModpackInstallResult;
+        let managedFilesWriteFailed = false;
+        try {
+          result = await installModrinthModpack(serverUuid, socketInstance, selectedFile, setProgress, {
+            onManagedFilesCopied: async (managedFiles) => {
+              const nextRecord = { ...record, managedFiles };
+              try {
+                await saveManagedModrinthModpack(serverUuid, nextRecord, true);
+                record = nextRecord;
+              } catch (error) {
+                managedFilesWriteFailed = true;
+                throw error;
+              }
+            },
+          });
+        } catch (error) {
+          if (record.managedFiles.length === 0 && !managedFilesWriteFailed) {
+            try {
+              await deleteManagedModrinthModpackRecord(serverUuid, record.projectId);
+            } catch {
+              // Keep the empty record if cleanup fails; it is safer than deleting an untracked path.
+            }
+          } else {
+            setManagerView('installed');
+            setSelectedProject(null);
+          }
+          throw error;
+        }
+        record = { ...record, managedFiles: result.managedFiles };
+        try {
+          await saveManagedModrinthModpack(serverUuid, record, true);
+          setManagerView('installed');
+        } catch (error) {
+          setInstallSummary(t('tools.modpackInstalledButUntracked', {}));
+          addToast(httpErrorToHuman(error), 'error');
+          setManagerView('installed');
+          setSelectedProject(null);
+          return;
+        }
         const dependencySummary = Object.entries(result.dependencies)
           .map(([name, version]) => `${name}: ${version}`)
           .join(' · ');
@@ -285,32 +353,46 @@ export default function ModrinthManager({
       {!socketConnected && <Alert color='yellow'>{t('tools.websocketRequired', {})}</Alert>}
       {installSummary && <Alert color='green'>{installSummary}</Alert>}
 
-      {!isModpack && (
-        <SegmentedControl
-          value={managerView}
-          onChange={(value) => setManagerView(value as 'browse' | 'installed')}
-          data={[
-            { value: 'installed', label: t('tools.installedTab', {}) },
-            { value: 'browse', label: t('tools.browseTab', {}) },
-          ]}
-        />
-      )}
+      <SegmentedControl
+        value={managerView}
+        disabled={installLoading}
+        onChange={(value) => setManagerView(value as 'browse' | 'installed')}
+        data={[
+          { value: 'installed', label: t('tools.installedTab', {}) },
+          { value: 'browse', label: t('tools.browseTab', {}) },
+        ]}
+      />
 
-      {!isModpack && managerView === 'installed' && targetFolder ? (
-        <InstalledModrinthFiles
-          kind={kind === 'plugin' ? 'plugin' : 'mod'}
-          serverUuid={serverUuid}
-          targetFolder={targetFolder}
-          gameVersion={gameVersion}
-          loader={loader}
-          canReadFiles={canReadFiles}
-          canDeleteFiles={canDeleteFiles}
-          canInstall={canInstall}
-          serverStopped={serverStopped}
-          serverBusy={serverBusy}
-          socketConnected={socketConnected}
-          socketInstance={socketInstance}
-        />
+      {managerView === 'installed' ? (
+        isModpack ? (
+          <InstalledModrinthModpacks
+            serverUuid={serverUuid}
+            gameVersion={gameVersion}
+            canReadFiles={canReadFiles}
+            canReadFileContents={canReadFileContents}
+            canDeleteFiles={canDeleteFiles}
+            canInstall={canInstall}
+            serverStopped={serverStopped}
+            serverBusy={serverBusy}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        ) : targetFolder ? (
+          <InstalledModrinthFiles
+            kind={kind === 'plugin' ? 'plugin' : 'mod'}
+            serverUuid={serverUuid}
+            targetFolder={targetFolder}
+            gameVersion={gameVersion}
+            loader={loader}
+            canReadFiles={canReadFiles}
+            canDeleteFiles={canDeleteFiles}
+            canInstall={canInstall}
+            serverStopped={serverStopped}
+            serverBusy={serverBusy}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        ) : null
       ) : (
         <>
           <form onSubmit={(event) => void runSearch(event)}>

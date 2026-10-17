@@ -5,6 +5,7 @@
 - Added a complete German locale for extension UI strings and included locale files in the release archive.
 - Allowed new plugin JARs to be installed while the server is running and added console-detected, whitelist-rejected connection attempts to the ban workflow.
 - Added separate installed/browse views for mods and plugins, with paged Modrinth search, project details, staged version updates, and confirmed file removal.
+- Added an installed-modpack registry with version updates and removal limited to files originally created by All-in-One; existing conflicts remain untouched.
 - Expanded player management with offline players, banned IPs, max-player editing, player details and stats, fixed operator/IP/inventory/kill actions, and a confirmed stopped-server data wipe.
 
 ## 0.2.7 — 2026-10-16
