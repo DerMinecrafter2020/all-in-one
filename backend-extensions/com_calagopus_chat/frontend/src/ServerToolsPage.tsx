@@ -6,8 +6,10 @@ import ModrinthManager from './ModrinthManager.tsx';
 import PlayerManager from './PlayerManagerPage.tsx';
 import ServerPropertiesEditor from './ServerPropertiesEditor.tsx';
 import {
+  getCachedServerToolEggSettings,
   getCachedServerToolPages,
   isMinecraftEgg,
+  isServerToolPageAllowedForEgg,
   type ServerToolPageKey,
   supportsServerToolPage,
 } from './serverToolsVisibility.ts';
@@ -109,21 +111,32 @@ function ServerToolPage({ page }: Props) {
   };
   const title = pageTitles[page];
 
-  if (!isMinecraftEgg(server) || !supportsServerToolPage(server, page)) {
-    return (
-      <ServerContentContainer title={title}>
-        <div className='p-4'>
-          <Alert color='yellow'>{eggCompatibilityMessage(page, server.egg.name, t)}</Alert>
-        </div>
-      </ServerContentContainer>
-    );
-  }
-
   if (settings && !settings[page]) {
     return (
       <ServerContentContainer title={title}>
         <div className='p-4'>
           <Alert color='yellow'>{t('tools.toolPageDisabled', {})}</Alert>
+        </div>
+      </ServerContentContainer>
+    );
+  }
+
+  const eggSettings = getCachedServerToolEggSettings();
+  if (!isServerToolPageAllowedForEgg(server, page, eggSettings)) {
+    return (
+      <ServerContentContainer title={title}>
+        <div className='p-4'>
+          <Alert color='yellow'>{t('tools.serverToolEggNotSelected', { page: title, egg: server.egg.name })}</Alert>
+        </div>
+      </ServerContentContainer>
+    );
+  }
+
+  if (!isMinecraftEgg(server) || !supportsServerToolPage(server, page)) {
+    return (
+      <ServerContentContainer title={title}>
+        <div className='p-4'>
+          <Alert color='yellow'>{eggCompatibilityMessage(page, server.egg.name, t)}</Alert>
         </div>
       </ServerContentContainer>
     );

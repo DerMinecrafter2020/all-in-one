@@ -181,7 +181,17 @@ const translations = defineTranslations({
       serverToolPageDescription:
         'Control whether this All-in-One function is available in server sidebars. Other open Panel sessions may need a reload to refresh their menus.',
       serverToolPageEggNote:
-        'The page appears only on compatible Minecraft Eggs and for users with the required permissions.',
+        'Choose which installed Eggs show this page. Incompatible Eggs still get a warning and never see its tool controls.',
+      serverToolAllEggsLabel: 'Show on all Eggs',
+      serverToolAllEggsDescription:
+        'List this function for every Egg. Built-in compatibility checks still block unsupported controls.',
+      serverToolEggSelectionLabel: 'Eggs enabled for this function',
+      serverToolEggSelectionDescription: 'Only selected Eggs show this function in the server sidebar.',
+      loadingEggs: 'Loading Eggs…',
+      eggListPermissionRequired: 'Loading Egg choices requires the Panel admin permission eggs.read.',
+      unknownServerEgg: 'Unknown Egg ({uuid})',
+      unknownServerEggGroup: 'No longer available',
+      serverToolNoEggsSelected: 'No Eggs are selected. This page will be hidden for every server.',
       saveServerToolPage: 'Save page setting',
       serverToolPageSaved: 'Server page setting saved.',
       serverToolPages: {
@@ -547,6 +557,8 @@ const translations = defineTranslations({
         serverProperties:
           'The server.properties editor is not available for the {egg} Egg. It requires a Minecraft Java server, not Bedrock or a proxy.',
       },
+      serverToolEggNotSelected:
+        'The {page} page is not enabled for the {egg} Egg. Select this Egg in the page settings to show the function here.',
       serverPropertiesDescription:
         'Edit Minecraft Java server.properties in a clear grid of individual settings. Comments and unrecognized lines are preserved.',
       serverPropertiesLoading: 'Loading server.properties…',

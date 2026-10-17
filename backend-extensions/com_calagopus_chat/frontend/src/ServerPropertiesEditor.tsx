@@ -285,7 +285,7 @@ function PropertyLabel({ propertyKey }: { propertyKey: string }) {
     t('tools.serverPropertiesCustomField', { key: humanizePropertyKey(propertyKey) });
 
   return (
-    <Text size='sm' fw={600} tt='uppercase'>
+    <Text size='sm' fw={600} lineClamp={2} tt='uppercase' className='leading-5'>
       {label}
     </Text>
   );
@@ -307,11 +307,11 @@ function PropertyField({
   const isSelect = options?.includes(property.value.trim()) ?? false;
 
   return (
-    <Card withBorder padding={0} radius='sm' className='h-full'>
-      <Card.Section withBorder inheritPadding py='xs'>
+    <Card withBorder padding={0} radius='sm' className='flex h-full flex-col'>
+      <Card.Section withBorder inheritPadding py='xs' className='flex h-14 items-center overflow-hidden'>
         <PropertyLabel propertyKey={property.key} />
       </Card.Section>
-      <Card.Section inheritPadding py='sm' className='flex min-h-20 items-center'>
+      <Card.Section inheritPadding py='sm' className='flex min-h-20 flex-1 items-center'>
         {isBoolean ? (
           <Switch
             aria-label={property.key}

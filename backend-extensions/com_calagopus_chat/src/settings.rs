@@ -132,6 +132,45 @@ impl Default for ServerToolPagesSettings {
 
 #[derive(Clone, ToSchema, Serialize, Deserialize)]
 #[serde(default)]
+pub struct ServerToolEggSettings {
+    pub modpacks: Option<Vec<String>>,
+    pub mods: Option<Vec<String>>,
+    pub plugins: Option<Vec<String>>,
+    pub players: Option<Vec<String>>,
+    pub server_properties: Option<Vec<String>>,
+}
+
+impl Default for ServerToolEggSettings {
+    fn default() -> Self {
+        Self {
+            modpacks: None,
+            mods: None,
+            plugins: None,
+            players: None,
+            server_properties: None,
+        }
+    }
+}
+
+impl ServerToolEggSettings {
+    pub fn is_valid(&self) -> bool {
+        fn valid_egg_ids(ids: &Option<Vec<String>>) -> bool {
+            match ids {
+                None => true,
+                Some(ids) => ids.len() <= 1000 && ids.iter().all(|id| uuid::Uuid::parse_str(id).is_ok()),
+            }
+        }
+
+        valid_egg_ids(&self.modpacks)
+            && valid_egg_ids(&self.mods)
+            && valid_egg_ids(&self.plugins)
+            && valid_egg_ids(&self.players)
+            && valid_egg_ids(&self.server_properties)
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ExtensionSettingsData {
     pub ai_enabled: bool,
     pub ai_provider: compact_str::CompactString,
@@ -145,6 +184,7 @@ pub struct ExtensionSettingsData {
     pub floating_widget_enabled: bool,
     pub advertising: AdvertisingSettings,
     pub server_tool_pages: ServerToolPagesSettings,
+    pub server_tool_egg_settings: ServerToolEggSettings,
 }
 
 impl Default for ExtensionSettingsData {
@@ -163,6 +203,7 @@ impl Default for ExtensionSettingsData {
             floating_widget_enabled: true,
             advertising: AdvertisingSettings::default(),
             server_tool_pages: ServerToolPagesSettings::default(),
+            server_tool_egg_settings: ServerToolEggSettings::default(),
         }
     }
 }
@@ -226,6 +267,10 @@ impl SettingsSerializeExt for ExtensionSettingsData {
             .write_raw_setting(
                 "server_tool_pages_config",
                 serde_json::to_string(&self.server_tool_pages)?,
+            )
+            .write_raw_setting(
+                "server_tool_egg_settings_config",
+                serde_json::to_string(&self.server_tool_egg_settings)?,
             );
 
         let serializer = serializer
@@ -289,6 +334,10 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
             .take_raw_setting("server_tool_pages_config")
             .and_then(|value| serde_json::from_str(value.as_str()).ok())
             .unwrap_or_default();
+        let server_tool_egg_settings = deserializer
+            .take_raw_setting("server_tool_egg_settings_config")
+            .and_then(|value| serde_json::from_str(value.as_str()).ok())
+            .unwrap_or_default();
 
         Ok(Box::new(ExtensionSettingsData {
             ai_enabled: deserializer
@@ -325,6 +374,7 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
                 .unwrap_or(true),
             advertising,
             server_tool_pages,
+            server_tool_egg_settings,
         }))
     }
 }

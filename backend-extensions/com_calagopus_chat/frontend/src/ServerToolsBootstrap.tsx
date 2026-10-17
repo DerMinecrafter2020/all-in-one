@@ -15,7 +15,7 @@ export default function ServerToolsBootstrap() {
     Promise.all([getServer(serverIdentifier), getPublicServerToolPages()])
       .then(([server, response]) => {
         if (!active) return;
-        const changed = cacheServerVisibility(serverIdentifier, server, response.settings);
+        const changed = cacheServerVisibility(serverIdentifier, server, response.settings, response.eggSettings);
         if (changed) window.location.reload();
       })
       .catch(() => {

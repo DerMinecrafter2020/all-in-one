@@ -10,6 +10,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 #[derive(ToSchema, Serialize)]
 struct SettingsResponse {
     settings: crate::settings::ServerToolPagesSettings,
+    egg_settings: crate::settings::ServerToolEggSettings,
 }
 
 #[utoipa::path(get, path = "/settings", responses(
@@ -20,6 +21,7 @@ async fn route(state: GetState, _user: GetUser) -> ApiResponseResult {
 
     ApiResponse::new_serialized(SettingsResponse {
         settings: settings.server_tool_pages,
+        egg_settings: settings.server_tool_egg_settings,
     })
     .ok()
 }

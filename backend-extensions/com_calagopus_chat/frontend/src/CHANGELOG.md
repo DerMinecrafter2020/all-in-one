@@ -1,5 +1,9 @@
 # All-in-One changelog
 
+## 0.2.10 — 2026-10-17
+- Added per-function Egg selection to the Admin server-tool settings; unsupported Egg pages now explain the incompatibility while their controls remain gated.
+- Matched `server.properties` cards to a consistent height and aligned the label/input layout with the Panel settings design.
+
 ## 0.2.9 — 2026-10-17
 - Added installed/browse views for mods, plugins, and modpacks, including paged Modrinth catalogs, project details, staged updates, and confirmed removals limited to files tracked by All-in-One.
 - Expanded player management with offline players, banned IPs, max-player editing, player details and stats, fixed operator/IP/inventory/kill actions, and a confirmed stopped-server data wipe.

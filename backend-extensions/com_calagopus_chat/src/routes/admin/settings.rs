@@ -27,6 +27,7 @@ mod get {
         ai_server_power_enabled: bool,
         floating_widget_enabled: bool,
         server_tool_pages: crate::settings::ServerToolPagesSettings,
+        server_tool_egg_settings: crate::settings::ServerToolEggSettings,
     }
 
     #[derive(ToSchema, Serialize)]
@@ -82,6 +83,7 @@ mod get {
                     && !settings.ai_server_control_api_key.trim().is_empty(),
                 floating_widget_enabled: settings.floating_widget_enabled,
                 server_tool_pages: settings.server_tool_pages,
+                server_tool_egg_settings: settings.server_tool_egg_settings,
             },
             token_usage: TokenUsageResponse {
                 input_tokens: usage.try_get("input_tokens")?,
@@ -120,6 +122,8 @@ mod put {
         floating_widget_enabled: bool,
         #[serde(default)]
         server_tool_pages: Option<crate::settings::ServerToolPagesSettings>,
+        #[serde(default)]
+        server_tool_egg_settings: Option<crate::settings::ServerToolEggSettings>,
         #[serde(default)]
         clear_api_key: bool,
     }
@@ -180,6 +184,13 @@ mod put {
         let server_tool_pages = data
             .server_tool_pages
             .unwrap_or(current_settings.server_tool_pages);
+        let server_tool_egg_settings = data
+            .server_tool_egg_settings
+            .unwrap_or_else(|| current_settings.server_tool_egg_settings.clone());
+        if !server_tool_egg_settings.is_valid() {
+            return Err(ApiResponse::error("One or more selected Egg IDs are invalid.")
+                .with_status(StatusCode::BAD_REQUEST));
+        }
         let effective_server_control_api_key = if data.clear_server_control_api_key {
             ""
         } else if !server_control_api_key.is_empty() {
@@ -246,6 +257,7 @@ mod put {
             extension_settings.ai_server_power_enabled = data.ai_server_power_enabled;
             extension_settings.floating_widget_enabled = data.floating_widget_enabled;
             extension_settings.server_tool_pages = server_tool_pages;
+            extension_settings.server_tool_egg_settings = server_tool_egg_settings.clone();
 
             if data.clear_api_key {
                 extension_settings.ai_api_key = compact_str::CompactString::default();
@@ -274,6 +286,7 @@ mod put {
                     "ai_server_power_enabled": data.ai_server_power_enabled,
                     "floating_widget_enabled": data.floating_widget_enabled,
                     "server_tool_pages": server_tool_pages,
+                    "server_tool_egg_settings": server_tool_egg_settings,
                     "api_key_updated": api_key_updated,
                     "server_control_api_key_updated": server_control_api_key_updated,
                 }),

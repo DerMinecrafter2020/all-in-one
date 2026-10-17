@@ -3,7 +3,7 @@
 ## Project overview
 
 - This repository contains the All-in-One extension source, not the Panel itself. Its stable package ID is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat`; keep that ID for in-place upgrades unless a package migration is explicitly intended.
-- Current extension version: `0.2.9`. Minimum supported Calagopus Panel version: `1.2.5` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- Current extension version: `0.2.10`. Minimum supported Calagopus Panel version: `1.2.5` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
 - The extension provides direct/group/AI chat, server information and confirmed power actions, advertising placements, and configurable Minecraft-only Modrinth, player, and server.properties pages.
 - The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here and in `.github/workflows/release.yml`.
 
@@ -23,9 +23,9 @@
 - `src/lib.rs`: extension entry point and registration of admin/client API routers.
 - `src/settings.rs`: persistent extension settings. AI provider and Panel control keys use encrypted storage; advertising settings are public configuration, not secrets.
 - `src/routes/admin/settings.rs`: AI and configurable server-page settings API; `src/routes/admin/advertising.rs`: separate ad-settings API guarded by `extensions.manage`.
-- `src/routes/admin/server_tools.rs`: updates server-tool page visibility independently from Chat & AI settings.
+- `src/routes/admin/server_tools.rs`: updates server-tool page toggles and per-page Egg allowlists independently from Chat & AI settings.
 - `src/routes/client/advertising.rs`: returns only public, enabled banner configuration to authenticated users. It does not require Chat permissions.
-- `src/routes/client/server_tools.rs`: returns only public server-page toggles to authenticated users.
+- `src/routes/client/server_tools.rs`: returns only public server-page toggles and Egg allowlists to authenticated users.
 - `src/routes/client/conversations.rs` and `src/routes/client/conversation/`: chat creation, message history, AI tools, and power-action confirmation.
 - `frontend/src/index.ts`: global widget/banner/visibility bootstrap and account/admin/Minecraft server route registration.
 - `frontend/src/ChatWidget.tsx`: direct/group/AI chat UI, onboarding, slash commands, and status view.
@@ -52,7 +52,7 @@
 - Server installers must use Calagopus file APIs and the caller's own server permissions, accept only allowlisted HTTPS Modrinth file hosts, and avoid changing server loaders/startup commands. New installs never overwrite existing files; an explicit user-selected mod/plugin update may replace only its selected JAR after staging. Modpack management records only files newly copied by All-in-One in its protected registry; update may replace those tracked files, while pre-existing conflicts are never claimed or removed. Mod and modpack installs/updates require a stopped server; plugin JARs may be installed, updated, or removed while running, but disk changes do not hot-reload and the loaded plugin changes on restart.
 - Player actions are limited to fixed, validated kick, ban/pardon, whitelist, operator, IP-ban, clear-inventory, and kill commands and require `control.console`; reading console responses additionally requires `control.read-console`, while player lists and saved stats require `files.read-content`. Wiping a player's data/advancements/stats requires an explicit confirmation, a fully stopped server, a validated player UUID/world path, and `files.read`, `files.delete`, and `files.read-content`.
 - The `server.properties` editor requires `files.read-content` and `files.create`; starting/restarting after a save also requires `control.start`/`control.restart`.
-- Modrinth, player, and properties controls must respect Egg capabilities and persisted admin page toggles. Keep enabled page links visible for unsupported Eggs so the page can explain the compatibility mismatch; never render the incompatible tool controls. Keep the technical extension package ID stable when changing its display name to All-in-One.
+- Each server-tool page (modpack, mod, plugin, player, and `server.properties`) has an Admin Egg allowlist (or all Eggs) plus a global page toggle. Loading Egg choices requires `eggs.read`; saving requires `extensions.manage`. Controls must also pass the Egg-capability check; show a page-specific compatibility notice instead of rendering incompatible controls. Keep the technical extension package ID stable when changing its display name to All-in-One.
 
 ## Extension versioning
 
@@ -60,12 +60,12 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.2.9`)
+- The Git tag, prefixed with `v` (for example, `v0.2.10`)
 
-Start from the current version, `0.2.9`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.2.10`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
-0.2.9 → 0.2.10 → 0.3.0
+0.2.9 → 0.2.10 → 0.2.11 → 0.3.0
 0.10.10 → 1.0.0
 ```
 
@@ -89,7 +89,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download `All-in-One.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.9`.
+To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.2.10`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 

@@ -116,12 +116,24 @@ export const serverToolPagesSchema = z.object({
   serverProperties: z.boolean(),
 });
 
+const eggUuidSelectionSchema = z.array(z.string().uuid()).max(1000).nullable().default(null);
+
+export const serverToolEggSettingsSchema = z.object({
+  modpacks: eggUuidSelectionSchema,
+  mods: eggUuidSelectionSchema,
+  plugins: eggUuidSelectionSchema,
+  players: eggUuidSelectionSchema,
+  serverProperties: eggUuidSelectionSchema,
+});
+
 export const serverToolPagesResponseSchema = z.object({
   settings: serverToolPagesSchema,
+  eggSettings: serverToolEggSettingsSchema,
 });
 
 export const updateServerToolPagesSchema = z.object({
   serverToolPages: serverToolPagesSchema,
+  serverToolEggSettings: serverToolEggSettingsSchema,
 });
 
 export const adminSettingsSchema = z.object({
@@ -136,6 +148,7 @@ export const adminSettingsSchema = z.object({
   aiServerPowerEnabled: z.boolean(),
   floatingWidgetEnabled: z.boolean(),
   serverToolPages: serverToolPagesSchema,
+  serverToolEggSettings: serverToolEggSettingsSchema,
 });
 
 export const tokenUsageSchema = z.object({
@@ -240,6 +253,7 @@ export const updateAdminSettingsSchema = z.object({
   aiServerPowerEnabled: z.boolean(),
   floatingWidgetEnabled: z.boolean(),
   serverToolPages: serverToolPagesSchema.optional(),
+  serverToolEggSettings: serverToolEggSettingsSchema.optional(),
   clearServerControlApiKey: z.boolean(),
   clearApiKey: z.boolean(),
 });
@@ -252,6 +266,7 @@ export type AiProvider = z.infer<typeof aiProviderSchema>;
 export type AdminSettings = z.infer<typeof adminSettingsSchema>;
 export type TokenUsage = z.infer<typeof tokenUsageSchema>;
 export type ServerToolPages = z.infer<typeof serverToolPagesSchema>;
+export type ServerToolEggSettings = z.infer<typeof serverToolEggSettingsSchema>;
 export type UpdateServerToolPages = z.infer<typeof updateServerToolPagesSchema>;
 export type AiServerAction = z.infer<typeof aiServerActionSchema>;
 export type ChatMessage = z.infer<typeof messageSchema>;

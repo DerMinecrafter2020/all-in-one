@@ -1,9 +1,15 @@
-import { type ServerToolPages, serverToolPagesSchema } from './lib/schemas.ts';
+import {
+  type ServerToolEggSettings,
+  type ServerToolPages,
+  serverToolEggSettingsSchema,
+  serverToolPagesSchema,
+} from './lib/schemas.ts';
 
 export type ServerToolPageKey = keyof ServerToolPages;
 
 interface MinecraftEggCandidate {
   egg?: {
+    uuid?: string;
     name?: string;
     description?: string | null;
     features?: string[];
@@ -11,7 +17,16 @@ interface MinecraftEggCandidate {
 }
 
 const SETTINGS_CACHE_KEY = 'com.calagopus.all-in-one.server-tool-pages.v1';
-const SERVER_CACHE_PREFIX = `${SETTINGS_CACHE_KEY}.server.v2.`;
+const EGG_SETTINGS_CACHE_KEY = 'com.calagopus.all-in-one.server-tool-egg-settings.v1';
+const SERVER_CACHE_PREFIX = `${SETTINGS_CACHE_KEY}.server.v3.`;
+
+const DEFAULT_SERVER_TOOL_EGG_SETTINGS: ServerToolEggSettings = {
+  modpacks: null,
+  mods: null,
+  plugins: null,
+  players: null,
+  serverProperties: null,
+};
 
 function getEggDetails(server: MinecraftEggCandidate | null | undefined): string {
   if (!server?.egg) return '';
@@ -22,6 +37,8 @@ function getEggDetails(server: MinecraftEggCandidate | null | undefined): string
 interface CachedServerVisibility {
   capabilities: ServerToolCapabilities;
   pages: ServerToolPages;
+  eggSettings: ServerToolEggSettings;
+  eggUuid: string | null;
 }
 
 export interface ServerToolCapabilities {
@@ -111,6 +128,21 @@ export function setCachedServerToolPages(pages: ServerToolPages): void {
   writeStorage(SETTINGS_CACHE_KEY, JSON.stringify(pages));
 }
 
+export function getCachedServerToolEggSettings(): ServerToolEggSettings {
+  const raw = readStorage(EGG_SETTINGS_CACHE_KEY);
+  if (!raw) return DEFAULT_SERVER_TOOL_EGG_SETTINGS;
+
+  try {
+    return serverToolEggSettingsSchema.parse(JSON.parse(raw));
+  } catch {
+    return DEFAULT_SERVER_TOOL_EGG_SETTINGS;
+  }
+}
+
+export function setCachedServerToolEggSettings(eggSettings: ServerToolEggSettings): void {
+  writeStorage(EGG_SETTINGS_CACHE_KEY, JSON.stringify(eggSettings));
+}
+
 function serverVisibilityKey(serverIdentifier: string): string {
   return `${SERVER_CACHE_PREFIX}${encodeURIComponent(serverIdentifier)}`;
 }
@@ -120,11 +152,18 @@ function readServerVisibility(serverIdentifier: string): CachedServerVisibility 
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as { capabilities?: unknown; pages?: unknown };
+    const parsed = JSON.parse(raw) as {
+      capabilities?: unknown;
+      pages?: unknown;
+      eggSettings?: unknown;
+      eggUuid?: unknown;
+    };
     if (typeof parsed.capabilities !== 'object' || parsed.capabilities === null) return null;
     return {
       capabilities: parsed.capabilities as ServerToolCapabilities,
       pages: serverToolPagesSchema.parse(parsed.pages),
+      eggSettings: serverToolEggSettingsSchema.parse(parsed.eggSettings ?? DEFAULT_SERVER_TOOL_EGG_SETTINGS),
+      eggUuid: typeof parsed.eggUuid === 'string' ? parsed.eggUuid : null,
     };
   } catch {
     return null;
@@ -135,17 +174,35 @@ export function cacheServerVisibility(
   serverIdentifier: string,
   server: MinecraftEggCandidate,
   pages: ServerToolPages,
+  eggSettings: ServerToolEggSettings,
 ): boolean {
   const capabilities = getServerToolCapabilities(server);
   const previous = readServerVisibility(serverIdentifier);
   const changed =
     !previous ||
     JSON.stringify(previous.capabilities) !== JSON.stringify(capabilities) ||
-    JSON.stringify(previous.pages) !== JSON.stringify(pages);
+    JSON.stringify(previous.pages) !== JSON.stringify(pages) ||
+    JSON.stringify(previous.eggSettings) !== JSON.stringify(eggSettings) ||
+    previous.eggUuid !== (server.egg?.uuid ?? null);
 
   const settingsStored = writeStorage(SETTINGS_CACHE_KEY, JSON.stringify(pages));
-  const serverStored = writeStorage(serverVisibilityKey(serverIdentifier), JSON.stringify({ capabilities, pages }));
-  return changed && settingsStored && serverStored;
+  const eggSettingsStored = writeStorage(EGG_SETTINGS_CACHE_KEY, JSON.stringify(eggSettings));
+  const serverStored = writeStorage(
+    serverVisibilityKey(serverIdentifier),
+    JSON.stringify({ capabilities, pages, eggSettings, eggUuid: server.egg?.uuid ?? null }),
+  );
+  return changed && settingsStored && eggSettingsStored && serverStored;
+}
+
+export function isServerToolPageAllowedForEgg(
+  server: MinecraftEggCandidate | null | undefined,
+  page: ServerToolPageKey,
+  eggSettings: ServerToolEggSettings = getCachedServerToolEggSettings(),
+): boolean {
+  const selectedEggs = eggSettings[page];
+  if (selectedEggs === null) return true;
+  const eggUuid = server?.egg?.uuid;
+  return Boolean(eggUuid && selectedEggs.includes(eggUuid));
 }
 
 export function isServerToolPageVisible(page: ServerToolPageKey): boolean {
@@ -156,5 +213,9 @@ export function isServerToolPageVisible(page: ServerToolPageKey): boolean {
   if (!serverVisibility) return false;
 
   const pageSettings = getCachedServerToolPages() ?? serverVisibility.pages;
-  return pageSettings[page];
+  const selectedEggs = getCachedServerToolEggSettings()[page];
+  return (
+    pageSettings[page] &&
+    (selectedEggs === null || Boolean(serverVisibility.eggUuid && selectedEggs.includes(serverVisibility.eggUuid)))
+  );
 }

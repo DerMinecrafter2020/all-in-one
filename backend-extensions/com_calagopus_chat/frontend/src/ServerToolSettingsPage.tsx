@@ -1,13 +1,18 @@
 import { faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Alert, Button, Group, Loader, Paper, Stack, Switch, Text } from '@mantine/core';
+import { Alert, Button, Group, Loader, MultiSelect, Paper, Stack, Switch, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
+import getAllEggs from '@/api/admin/nests/getAllEggs.ts';
 import { httpErrorToHuman } from '@/api/axios.ts';
 import { useToast } from '@/providers/ToastProvider.tsx';
 import getAdminSettings from './api/getAdminSettings.ts';
 import updateServerToolPages from './api/updateServerToolPages.ts';
 import type { AdminSettings } from './lib/schemas.ts';
-import { setCachedServerToolPages, type ServerToolPageKey } from './serverToolsVisibility.ts';
+import {
+  type ServerToolPageKey,
+  setCachedServerToolEggSettings,
+  setCachedServerToolPages,
+} from './serverToolsVisibility.ts';
 import { useExtTranslations } from './translations.ts';
 
 interface Props {
@@ -49,6 +54,13 @@ export default function ServerToolSettingsPage({ page }: Props) {
   const { t } = useExtTranslations();
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [enabled, setEnabled] = useState(true);
+  const [allEggs, setAllEggs] = useState(true);
+  const [selectedEggUuids, setSelectedEggUuids] = useState<string[]>([]);
+  const [eggOptions, setEggOptions] = useState<
+    Array<{ group: string; items: Array<{ label: string; value: string }> }>
+  >([]);
+  const [loadingEggs, setLoadingEggs] = useState(true);
+  const [eggLoadFailed, setEggLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +71,9 @@ export default function ServerToolSettingsPage({ page }: Props) {
         if (!active) return;
         setSettings(data);
         setEnabled(data.serverToolPages[page]);
+        const pageEggSelection = data.serverToolEggSettings[page];
+        setAllEggs(pageEggSelection === null);
+        setSelectedEggUuids(pageEggSelection ?? []);
       })
       .catch((error) => {
         if (active) addToast(httpErrorToHuman(error), 'error');
@@ -72,15 +87,43 @@ export default function ServerToolSettingsPage({ page }: Props) {
     };
   }, [addToast, page]);
 
+  useEffect(() => {
+    let active = true;
+    getAllEggs()
+      .then((nests) => {
+        if (!active) return;
+        setEggOptions(
+          nests.map((nest) => ({
+            group: nest.nest.name,
+            items: nest.eggs.map((egg) => ({ label: egg.name, value: egg.uuid })),
+          })),
+        );
+      })
+      .catch(() => {
+        if (active) setEggLoadFailed(true);
+      })
+      .finally(() => {
+        if (active) setLoadingEggs(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const save = async () => {
     if (!settings) return;
 
     const nextPages = { ...settings.serverToolPages, [page]: enabled };
+    const nextEggSettings = eggLoadFailed
+      ? settings.serverToolEggSettings
+      : { ...settings.serverToolEggSettings, [page]: allEggs ? null : selectedEggUuids };
     setSaving(true);
     try {
-      await updateServerToolPages({ serverToolPages: nextPages });
-      setSettings({ ...settings, serverToolPages: nextPages });
+      await updateServerToolPages({ serverToolPages: nextPages, serverToolEggSettings: nextEggSettings });
+      setSettings({ ...settings, serverToolPages: nextPages, serverToolEggSettings: nextEggSettings });
       setCachedServerToolPages(nextPages);
+      setCachedServerToolEggSettings(nextEggSettings);
       addToast(t('settings.serverToolPageSaved', {}), 'success');
     } catch (error) {
       addToast(httpErrorToHuman(error), 'error');
@@ -90,6 +133,17 @@ export default function ServerToolSettingsPage({ page }: Props) {
   };
 
   const title = getPageTitle(page, t);
+  const selectedEggIds = new Set(eggOptions.flatMap((group) => group.items.map((egg) => egg.value)));
+  const unknownEggs = selectedEggUuids
+    .filter((eggUuid) => !selectedEggIds.has(eggUuid))
+    .map((eggUuid) => ({
+      label: t('settings.unknownServerEgg', { uuid: eggUuid }),
+      value: eggUuid,
+    }));
+  const eggSelectData = [
+    ...eggOptions,
+    ...(unknownEggs.length > 0 ? [{ group: t('settings.unknownServerEggGroup', {}), items: unknownEggs }] : []),
+  ];
 
   if (loading) {
     return (
@@ -132,8 +186,46 @@ export default function ServerToolSettingsPage({ page }: Props) {
             onChange={(event) => setEnabled(event.currentTarget.checked)}
           />
 
+          <Stack gap='xs'>
+            <Switch
+              label={t('settings.serverToolAllEggsLabel', {})}
+              description={t('settings.serverToolAllEggsDescription', {})}
+              checked={allEggs}
+              disabled={saving || loadingEggs || eggLoadFailed}
+              onChange={(event) => setAllEggs(event.currentTarget.checked)}
+            />
+            {loadingEggs && (
+              <Group gap='xs'>
+                <Loader size='xs' />
+                <Text size='xs' c='dimmed'>
+                  {t('settings.loadingEggs', {})}
+                </Text>
+              </Group>
+            )}
+            {eggLoadFailed && <Alert color='yellow'>{t('settings.eggListPermissionRequired', {})}</Alert>}
+            {!allEggs && !eggLoadFailed && (
+              <>
+                <MultiSelect
+                  label={t('settings.serverToolEggSelectionLabel', {})}
+                  description={t('settings.serverToolEggSelectionDescription', {})}
+                  data={eggSelectData}
+                  value={selectedEggUuids}
+                  onChange={setSelectedEggUuids}
+                  searchable
+                  clearable
+                  maxDropdownHeight={320}
+                  maxValues={1000}
+                  disabled={saving || loadingEggs}
+                />
+                {selectedEggUuids.length === 0 && (
+                  <Alert color='yellow'>{t('settings.serverToolNoEggsSelected', {})}</Alert>
+                )}
+              </>
+            )}
+          </Stack>
+
           <Group justify='flex-end'>
-            <Button loading={saving} disabled={saving} onClick={() => void save()}>
+            <Button loading={saving} disabled={saving || loadingEggs} onClick={() => void save()}>
               {t('settings.saveServerToolPage', {})}
             </Button>
           </Group>
