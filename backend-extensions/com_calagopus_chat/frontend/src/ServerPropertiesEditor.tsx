@@ -3,12 +3,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   Alert,
   Button,
-  Code,
+  Card,
   Group,
   Loader,
   Modal,
   NumberInput,
-  Paper,
   Select,
   SimpleGrid,
   Stack,
@@ -191,7 +190,8 @@ const PROPERTY_LABEL_TRANSLATORS: Record<string, (t: ReturnType<typeof useExtTra
     t('tools.serverPropertiesFields.enableJmxMonitoring', {}),
   'enable-query': (t: ReturnType<typeof useExtTranslations>['t']) => t('tools.serverPropertiesFields.enableQuery', {}),
   'enable-rcon': (t: ReturnType<typeof useExtTranslations>['t']) => t('tools.serverPropertiesFields.enableRcon', {}),
-  'enable-status': (t: ReturnType<typeof useExtTranslations>['t']) => t('tools.serverPropertiesFields.enableStatus', {}),
+  'enable-status': (t: ReturnType<typeof useExtTranslations>['t']) =>
+    t('tools.serverPropertiesFields.enableStatus', {}),
   'enforce-secure-profile': (t: ReturnType<typeof useExtTranslations>['t']) =>
     t('tools.serverPropertiesFields.enforceSecureProfile', {}),
   'enforce-whitelist': (t: ReturnType<typeof useExtTranslations>['t']) =>
@@ -280,16 +280,14 @@ const PROPERTY_LABEL_TRANSLATORS: Record<string, (t: ReturnType<typeof useExtTra
 
 function PropertyLabel({ propertyKey }: { propertyKey: string }) {
   const { t } = useExtTranslations();
-  const label = PROPERTY_LABEL_TRANSLATORS[propertyKey]?.(t) ??
+  const label =
+    PROPERTY_LABEL_TRANSLATORS[propertyKey]?.(t) ??
     t('tools.serverPropertiesCustomField', { key: humanizePropertyKey(propertyKey) });
 
   return (
-    <Group justify='space-between' gap='xs' wrap='wrap'>
-      <Text size='sm' fw={500}>
-        {label}
-      </Text>
-      <Code>{propertyKey}</Code>
-    </Group>
+    <Text size='sm' fw={600} tt='uppercase'>
+      {label}
+    </Text>
   );
 }
 
@@ -302,59 +300,57 @@ function PropertyField({
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
-  const label = <PropertyLabel propertyKey={property.key} />;
   const normalizedValue = property.value.trim().toLowerCase();
 
-  if (BOOLEAN_PROPERTIES.has(property.key) && ['true', 'false'].includes(normalizedValue)) {
-    return (
-      <Switch
-        label={label}
-        aria-label={property.key}
-        checked={normalizedValue === 'true'}
-        disabled={disabled}
-        onChange={(event) => onChange(event.currentTarget.checked ? 'true' : 'false')}
-      />
-    );
-  }
-
   const options = SELECT_PROPERTIES[property.key];
-  if (options?.includes(property.value.trim())) {
-    return (
-      <Select
-        label={label}
-        aria-label={property.key}
-        data={options.map((value) => ({ value, label: value }))}
-        value={property.value.trim()}
-        allowDeselect={false}
-        disabled={disabled}
-        onChange={(value) => {
-          if (value !== null) onChange(value);
-        }}
-      />
-    );
-  }
-
-  if (NUMBER_PROPERTIES.has(property.key)) {
-    return (
-      <NumberInput
-        label={label}
-        aria-label={property.key}
-        value={property.value}
-        allowDecimal={false}
-        disabled={disabled}
-        onChange={(value) => onChange(String(value))}
-      />
-    );
-  }
+  const isBoolean = BOOLEAN_PROPERTIES.has(property.key) && ['true', 'false'].includes(normalizedValue);
+  const isSelect = options?.includes(property.value.trim()) ?? false;
 
   return (
-    <TextInput
-      label={label}
-      aria-label={property.key}
-      value={property.value}
-      disabled={disabled}
-      onChange={(event) => onChange(event.currentTarget.value)}
-    />
+    <Card withBorder padding={0} radius='sm' className='h-full'>
+      <Card.Section withBorder inheritPadding py='xs'>
+        <PropertyLabel propertyKey={property.key} />
+      </Card.Section>
+      <Card.Section inheritPadding py='sm' className='flex min-h-20 items-center'>
+        {isBoolean ? (
+          <Switch
+            aria-label={property.key}
+            checked={normalizedValue === 'true'}
+            disabled={disabled}
+            onChange={(event) => onChange(event.currentTarget.checked ? 'true' : 'false')}
+          />
+        ) : isSelect ? (
+          <Select
+            aria-label={property.key}
+            data={options.map((value) => ({ value, label: value }))}
+            value={property.value.trim()}
+            allowDeselect={false}
+            disabled={disabled}
+            w='100%'
+            onChange={(value) => {
+              if (value !== null) onChange(value);
+            }}
+          />
+        ) : NUMBER_PROPERTIES.has(property.key) ? (
+          <NumberInput
+            aria-label={property.key}
+            value={property.value}
+            allowDecimal={false}
+            disabled={disabled}
+            w='100%'
+            onChange={(value) => onChange(String(value))}
+          />
+        ) : (
+          <TextInput
+            aria-label={property.key}
+            value={property.value}
+            disabled={disabled}
+            w='100%'
+            onChange={(event) => onChange(event.currentTarget.value)}
+          />
+        )}
+      </Card.Section>
+    </Card>
   );
 }
 
@@ -474,15 +470,14 @@ export default function ServerPropertiesEditor({
         <Alert color='yellow'>{t('tools.serverPropertiesNoFields', {})}</Alert>
       )}
 
-      <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing='sm'>
+      <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing='md' verticalSpacing='md'>
         {propertyLines.map((property) => (
-          <Paper key={property.id} withBorder radius='sm' p='sm'>
-            <PropertyField
-              property={property}
-              disabled={!canRead || !canWrite || serverBusy || saving || loadError}
-              onChange={(value) => updateProperty(property.id, value)}
-            />
-          </Paper>
+          <PropertyField
+            key={property.id}
+            property={property}
+            disabled={!canRead || !canWrite || serverBusy || saving || loadError}
+            onChange={(value) => updateProperty(property.id, value)}
+          />
         ))}
       </SimpleGrid>
 

@@ -94,7 +94,11 @@ function ServerToolPage({ page }: Props) {
     return (
       <ServerContentContainer title={title}>
         <div className='p-4'>
-          <Alert color='yellow'>{t('tools.notMinecraftEgg', {})}</Alert>
+          <Alert color='yellow'>
+            {page === 'serverProperties'
+              ? t('tools.serverPropertiesEggNotSupported', { egg: server.egg.name })
+              : t('tools.notMinecraftEgg', {})}
+          </Alert>
         </div>
       </ServerContentContainer>
     );
@@ -104,7 +108,11 @@ function ServerToolPage({ page }: Props) {
     return (
       <ServerContentContainer title={title}>
         <div className='p-4'>
-          <Alert color='yellow'>{t('tools.pageNotSupportedForEgg', { egg: server.egg.name })}</Alert>
+          <Alert color='yellow'>
+            {page === 'serverProperties'
+              ? t('tools.serverPropertiesEggNotSupported', { egg: server.egg.name })
+              : t('tools.pageNotSupportedForEgg', { egg: server.egg.name })}
+          </Alert>
         </div>
       </ServerContentContainer>
     );

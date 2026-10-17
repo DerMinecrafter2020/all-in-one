@@ -7,6 +7,7 @@
 - Added separate installed/browse views for mods and plugins, with paged Modrinth search, project details, staged version updates, and confirmed file removal.
 - Added an installed-modpack registry with version updates and removal limited to files originally created by All-in-One; existing conflicts remain untouched.
 - Expanded player management with offline players, banned IPs, max-player editing, player details and stats, fixed operator/IP/inventory/kill actions, and a confirmed stopped-server data wipe.
+- Restyled `server.properties` as a responsive settings-card grid and added an explicit Egg compatibility notice when the editor is unavailable.
 
 ## 0.2.7 — 2026-10-16
 - Rebranded the extension display name to All-in-One while preserving its `com.calagopus.chat` package ID for upgrades.

@@ -536,8 +536,10 @@ const translations = defineTranslations({
         pauseWhenEmptySeconds: 'Pause when empty (seconds)',
       },
       serverPropertiesTitle: 'server.properties editor',
+      serverPropertiesEggNotSupported:
+        'The server.properties editor requires a supported Minecraft Java server Egg. The {egg} Egg is not compatible.',
       serverPropertiesDescription:
-        'Edit each Minecraft Java server.properties setting in its own field. Comments and unrecognized lines are preserved.',
+        'Edit Minecraft Java server.properties in a clear grid of individual settings. Comments and unrecognized lines are preserved.',
       serverPropertiesLoading: 'Loading server.properties…',
       serverPropertiesPermissionRequired: 'Editing server.properties requires files.read-content and files.create.',
       serverPropertiesLoadFailed: 'Could not load server.properties.',

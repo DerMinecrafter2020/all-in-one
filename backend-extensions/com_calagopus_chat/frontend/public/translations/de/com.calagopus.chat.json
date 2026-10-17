@@ -486,7 +486,8 @@
         "pauseWhenEmptySeconds": "Bei leerem Server pausieren (Sekunden)"
       },
       "serverPropertiesTitle": "server.properties-Editor",
-      "serverPropertiesDescription": "Bearbeite jede Minecraft-Java-server.properties-Einstellung in einem eigenen Feld. Kommentare und unbekannte Zeilen bleiben erhalten.",
+      "serverPropertiesEggNotSupported": "Der server.properties-Editor benötigt ein unterstütztes Minecraft-Java-Egg. Das Egg {egg} ist nicht kompatibel.",
+      "serverPropertiesDescription": "Bearbeite die Minecraft-Java-server.properties in einem übersichtlichen Raster aus einzelnen Einstellungen. Kommentare und unbekannte Zeilen bleiben erhalten.",
       "serverPropertiesLoading": "server.properties wird geladen…",
       "serverPropertiesPermissionRequired": "Zum Bearbeiten von server.properties werden files.read-content und files.create benötigt.",
       "serverPropertiesLoadFailed": "server.properties konnte nicht geladen werden.",
