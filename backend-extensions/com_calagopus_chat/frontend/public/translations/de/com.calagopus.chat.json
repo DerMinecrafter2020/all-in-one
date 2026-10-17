@@ -531,7 +531,7 @@
       "modpackAlreadyManaged": "Dieses Modpack wird bereits verwaltet. Öffne den Tab „Installiert“, um es zu aktualisieren oder zu entfernen.",
       "modpackInstalledButUntracked": "Die Modpackdateien wurden installiert, aber All-in-One konnte den Verwaltungseintrag nicht vollständig speichern. Darin nicht aufgeführte Dateien werden beim Aktualisieren oder Entfernen nicht verändert; prüfe die Serverdateien, bevor du es erneut versuchst.",
       "installedModpacksTitle": "{count} verwaltete Modpacks",
-      "installedModpacksEmpty": "Es wurden keine über diesen Manager installierten Modpacks gefunden. Anders installierte Modpacks werden hier nicht verwaltet.",
+      "installedModpacksEmpty": "Es wurden keine verwalteten Modpacks gefunden. Vor dem Einbau dieser Verwaltung installierte Packs werden nicht erkannt; installiere sie über „Durchsuchen“, um neu angelegte Dateien zu erfassen.",
       "installedModpacksPermissionRequired": "Zum Anzeigen verwalteter Modpacks werden files.read und files.read-content benötigt.",
       "installedModpackDeletePermissionRequired": "Zum Entfernen eines verwalteten Modpacks wird files.delete benötigt.",
       "searchInstalledModpacks": "Installierte Modpacks durchsuchen",
@@ -552,7 +552,7 @@
       "modpackUpdated": "{title} wurde auf Version {version} aktualisiert.",
       "modpackUpdatedOldFilesRemain": "Die neue Version wurde installiert, aber das Entfernen alter Dateien oder der Abschluss des Verwaltungseintrags schlug fehl. Beide Versionen bleiben erfasst, damit du es sicher erneut versuchen oder das Pack entfernen kannst.",
       "modpackUpdatePartial": "Das Update wurde abgeschlossen, aber {count} verwaltete Dateien konnten nicht kopiert werden. Die bisherigen Versionen dieser Dateien bleiben verwaltet.",
-      "modpackRegistryNote": "Hier erscheinen Modpacks, die über All-in-One installiert wurden. Manuell oder mit anderen Werkzeugen installierte Packs werden nicht erfasst und hier nicht verändert."
+      "modpackRegistryNote": "Die Erfassung beginnt ab dieser Version bei Installationen über diesen Manager. Ältere oder extern installierte Packs werden nicht übernommen; installiere sie über „Durchsuchen“ neu, um neu angelegte Dateien zu verwalten. Vorhandene Konflikte bleiben unangetastet."
     }
   }
 }

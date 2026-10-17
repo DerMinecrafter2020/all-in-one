@@ -587,7 +587,7 @@ const translations = defineTranslations({
         'The modpack files were installed, but All-in-One could not fully save its management record. Files not listed there will be left untouched by update or removal; review the server files before retrying.',
       installedModpacksTitle: '{count} managed modpacks',
       installedModpacksEmpty:
-        'No modpacks installed through this manager were found. Modpacks installed elsewhere are not tracked here.',
+        'No managed modpacks were found. Packs installed before this registry was added are not detected; install them through Browse to register newly created files.',
       installedModpacksPermissionRequired: 'Viewing managed modpacks requires files.read and files.read-content.',
       installedModpackDeletePermissionRequired: 'Removing a managed modpack requires files.delete.',
       searchInstalledModpacks: 'Search installed modpacks',
@@ -614,7 +614,7 @@ const translations = defineTranslations({
       modpackUpdatePartial:
         'The update finished, but {count} tracked files could not be copied. The previous versions of those files remain managed.',
       modpackRegistryNote:
-        'This list contains modpacks installed through All-in-One. Packs installed manually or by another tool are not tracked and will not be changed here.',
+        'Tracking starts with installations through this manager from this version onward. Older or externally installed packs are not imported; reinstall through Browse to manage newly created files. Existing conflicts remain untouched.',
     },
   },
 });
