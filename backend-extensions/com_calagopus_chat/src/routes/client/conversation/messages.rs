@@ -161,6 +161,7 @@ mod post {
 
     const MAX_TOOL_ROUNDS: usize = 4;
     const MAX_TOOL_CALLS_PER_TURN: usize = 8;
+    const MAX_AI_PROVIDER_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
 
     fn accumulate_token_count(total: &mut Option<i64>, next: Option<i64>) {
         if let Some(next) = next {
@@ -542,7 +543,7 @@ mod post {
     async fn send_provider_request(
         request: reqwest::RequestBuilder,
     ) -> Result<serde_json::Value, anyhow::Error> {
-        let response = request.send().await?;
+        let mut response = request.send().await?;
         let status = response.status();
         let content_type = response
             .headers()
@@ -556,7 +557,24 @@ mod post {
             ));
         }
 
-        let body = response.bytes().await?;
+        if response
+            .content_length()
+            .is_some_and(|length| length > MAX_AI_PROVIDER_RESPONSE_BYTES as u64)
+        {
+            return Err(anyhow::anyhow!(
+                "AI provider response exceeded the supported size limit."
+            ));
+        }
+
+        let mut body = Vec::new();
+        while let Some(chunk) = response.chunk().await? {
+            if body.len().saturating_add(chunk.len()) > MAX_AI_PROVIDER_RESPONSE_BYTES {
+                return Err(anyhow::anyhow!(
+                    "AI provider response exceeded the supported size limit."
+                ));
+            }
+            body.extend_from_slice(&chunk);
+        }
         serde_json::from_slice(&body).map_err(|error| {
             tracing::warn!(
                 http_status = %status,

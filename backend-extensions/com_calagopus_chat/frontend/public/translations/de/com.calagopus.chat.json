@@ -166,7 +166,7 @@
       "serverToolEggSelectionLabel": "Eggs für diese Funktion",
       "serverToolEggSelectionDescription": "Nur ausgewählte Eggs zeigen diese Funktion in der Servernavigation.",
       "loadingEggs": "Eggs werden geladen…",
-      "eggListPermissionRequired": "Zum Laden der Egg-Auswahl wird die Panel-Adminberechtigung eggs.read benötigt.",
+      "eggListPermissionRequired": "Zum Laden der Egg-Auswahl wird die Panel-Adminberechtigung nests.read benötigt.",
       "unknownServerEgg": "Unbekanntes Egg ({uuid})",
       "unknownServerEggGroup": "Nicht mehr verfügbar",
       "serverToolNoEggsSelected": "Es sind keine Eggs ausgewählt. Diese Seite bleibt für alle Server ausgeblendet.",

@@ -2,7 +2,7 @@
 name = "com_calagopus_chat"
 description = "An all-in-one chat and Minecraft server management extension for the Calagopus Panel."
 authors = ["All-in-One extension contributors"]
-version = "0.2.10"
+version = "0.3.0"
 edition = { workspace = true }
 license = "GPL-3.0-or-later"
 

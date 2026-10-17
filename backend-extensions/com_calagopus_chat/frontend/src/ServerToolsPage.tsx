@@ -144,7 +144,7 @@ function ServerToolPage({ page }: Props) {
 
   return (
     <ServerContentContainer title={title}>
-      <div className='p-4'>
+      <div key={server.uuid} className='p-4'>
         {serverBusy && (
           <Alert color='yellow' className='mb-4'>
             {t('tools.serverBusy', {})}

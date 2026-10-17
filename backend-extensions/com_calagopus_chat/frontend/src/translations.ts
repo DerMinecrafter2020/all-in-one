@@ -188,7 +188,7 @@ const translations = defineTranslations({
       serverToolEggSelectionLabel: 'Eggs enabled for this function',
       serverToolEggSelectionDescription: 'Only selected Eggs show this function in the server sidebar.',
       loadingEggs: 'Loading Eggs…',
-      eggListPermissionRequired: 'Loading Egg choices requires the Panel admin permission eggs.read.',
+      eggListPermissionRequired: 'Loading Egg choices requires the Panel admin permission nests.read.',
       unknownServerEgg: 'Unknown Egg ({uuid})',
       unknownServerEggGroup: 'No longer available',
       serverToolNoEggsSelected: 'No Eggs are selected. This page will be hidden for every server.',

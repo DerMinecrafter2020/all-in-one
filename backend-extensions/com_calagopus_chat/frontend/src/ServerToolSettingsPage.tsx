@@ -66,6 +66,8 @@ export default function ServerToolSettingsPage({ page }: Props) {
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setSettings(null);
     getAdminSettings()
       .then(({ settings: data }) => {
         if (!active) return;

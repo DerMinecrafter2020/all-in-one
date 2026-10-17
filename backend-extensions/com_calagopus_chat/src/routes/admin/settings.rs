@@ -148,9 +148,17 @@ mod put {
                 .with_status(StatusCode::BAD_REQUEST));
         };
 
-        if !matches!(parsed_url.scheme(), "http" | "https") || parsed_url.host_str().is_none() {
-            return Err(ApiResponse::error("The AI provider URL must use HTTP or HTTPS.")
-                .with_status(StatusCode::BAD_REQUEST));
+        if !matches!(parsed_url.scheme(), "http" | "https")
+            || parsed_url.host_str().is_none()
+            || !parsed_url.username().is_empty()
+            || parsed_url.password().is_some()
+            || parsed_url.query().is_some()
+            || parsed_url.fragment().is_some()
+        {
+            return Err(ApiResponse::error(
+                "The AI provider URL must be an HTTP or HTTPS base URL without credentials, query parameters, or fragments.",
+            )
+            .with_status(StatusCode::BAD_REQUEST));
         }
 
         let ai_model = data.ai_model.trim();

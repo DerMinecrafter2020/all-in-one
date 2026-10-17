@@ -16,6 +16,7 @@ const SUPPORTED_PROVIDERS: &[&str] = &[
     "google_gemini",
     "ollama",
 ];
+const MAX_MODEL_LIST_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
 
 mod post {
     use super::*;
@@ -50,8 +51,13 @@ mod post {
         };
 
         if !SUPPORTED_PROVIDERS.contains(&provider)
+            || base_url.len() > 512
             || !matches!(parsed_url.scheme(), "http" | "https")
             || parsed_url.host_str().is_none()
+            || !parsed_url.username().is_empty()
+            || parsed_url.password().is_some()
+            || parsed_url.query().is_some()
+            || parsed_url.fragment().is_some()
         {
             return Err(ApiResponse::error("The selected provider or provider URL is invalid.")
                 .with_status(StatusCode::BAD_REQUEST));
@@ -59,6 +65,10 @@ mod post {
 
         let saved_settings = crate::settings::load(&state.0).await?;
         let submitted_api_key = data.ai_api_key.as_deref().unwrap_or_default().trim();
+        if submitted_api_key.chars().count() > 4096 {
+            return Err(ApiResponse::error("The provider API key is too long.")
+                .with_status(StatusCode::BAD_REQUEST));
+        }
         let api_key = if submitted_api_key.is_empty() {
             saved_settings.ai_api_key.to_string()
         } else {
@@ -171,13 +181,32 @@ async fn load_models(
 async fn provider_json(
     request: reqwest::RequestBuilder,
 ) -> Result<serde_json::Value, anyhow::Error> {
-    let response = request.send().await?;
+    let mut response = request.send().await?;
     let status = response.status();
     if !status.is_success() {
         return Err(anyhow::anyhow!("AI provider returned HTTP {status}"));
     }
 
-    Ok(response.json().await?)
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_MODEL_LIST_RESPONSE_BYTES as u64)
+    {
+        return Err(anyhow::anyhow!(
+            "AI provider model list exceeded the supported size limit."
+        ));
+    }
+
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await? {
+        if body.len().saturating_add(chunk.len()) > MAX_MODEL_LIST_RESPONSE_BYTES {
+            return Err(anyhow::anyhow!(
+                "AI provider model list exceeded the supported size limit."
+            ));
+        }
+        body.extend_from_slice(&chunk);
+    }
+
+    Ok(serde_json::from_slice(&body)?)
 }
 
 pub fn router(state: &shared::State) -> OpenApiRouter<shared::State> {

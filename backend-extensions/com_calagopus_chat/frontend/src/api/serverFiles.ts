@@ -16,6 +16,7 @@ const MAX_MRPACK_MANIFEST_BYTES = 4 * 1024 * 1024;
 const MAX_MRPACK_FILE_COUNT = 1000;
 const MAX_MRPACK_TOTAL_BYTES = 8 * 1024 * 1024 * 1024;
 const MAX_MRPACK_SINGLE_FILE_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_OVERRIDE_DIRECTORY_PAGES = 100;
 const TRUSTED_MODRINTH_FILE_HOSTS = new Set([
   'cdn.modrinth.com',
   'github.com',
@@ -144,6 +145,10 @@ export async function runPanelFileOperation(
   let resolveOperation: (() => void) | undefined;
   let rejectOperation: ((error: Error) => void) | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let rejectTimeout: (error: Error) => void = () => undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    rejectTimeout = reject;
+  });
 
   const onCompleted = (uuid: string) => {
     if (operationId === uuid) resolveOperation?.();
@@ -165,7 +170,8 @@ export async function runPanelFileOperation(
   socket.addListener(SocketEvent.OPERATION_ABORTED, onAborted);
 
   try {
-    operationId = await start();
+    timer = setTimeout(() => rejectTimeout(new PanelFileOperationTimeoutError()), OPERATION_TIMEOUT_MS);
+    operationId = await Promise.race([start(), timeout]);
     if (!operationId) return;
 
     const alreadyFinished = finishedBeforeResponse.get(operationId);
@@ -174,11 +180,13 @@ export async function runPanelFileOperation(
       return;
     }
 
-    await new Promise<void>((resolve, reject) => {
-      resolveOperation = resolve;
-      rejectOperation = reject;
-      timer = setTimeout(() => reject(new PanelFileOperationTimeoutError()), OPERATION_TIMEOUT_MS);
-    });
+    await Promise.race([
+      new Promise<void>((resolve, reject) => {
+        resolveOperation = resolve;
+        rejectOperation = reject;
+      }),
+      timeout,
+    ]);
   } finally {
     if (timer) clearTimeout(timer);
     socket.removeListener(SocketEvent.OPERATION_COMPLETED, onCompleted);
@@ -447,14 +455,33 @@ async function listOverrideFiles(uuid: string, directory: string, maxFiles: numb
 
     let page = 1;
     const entries = [] as Awaited<ReturnType<typeof loadDirectory>>['entries']['data'];
-    let total = 0;
+    let total = Number.POSITIVE_INFINITY;
 
-    do {
+    while (entries.length < total) {
+      if (page > MAX_OVERRIDE_DIRECTORY_PAGES) {
+        throw new Error('The modpack override directory has too many pages to scan safely.');
+      }
       const response = await loadDirectory(uuid, currentDirectory, page, 'name_asc');
-      entries.push(...response.entries.data);
       total = response.entries.total;
+      const pageEntries = response.entries.data;
+      const maximumEntries = maxFiles * 4;
+      if (!Number.isSafeInteger(total) || total < 0 || total > maximumEntries) {
+        throw new Error('The modpack override directory contains too many entries.');
+      }
+      if (entries.length + pageEntries.length > maximumEntries) {
+        throw new Error('The modpack override directory contains too many entries.');
+      }
+      if (pageEntries.length === 0 && entries.length < total) {
+        throw new Error('The modpack override directory could not be paginated safely.');
+      }
+      entries.push(...pageEntries);
+      if (pageEntries.length === 0) break;
       page += 1;
-    } while (entries.length < total);
+    }
+
+    if (entries.length < total) {
+      throw new Error('The modpack override directory could not be scanned completely.');
+    }
 
     for (const item of entries) {
       visitedEntries += 1;

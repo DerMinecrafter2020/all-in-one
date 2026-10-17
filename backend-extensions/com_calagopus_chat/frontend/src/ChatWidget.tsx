@@ -10,7 +10,6 @@ import {
   faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Markdown from 'react-markdown';
 import {
   ActionIcon,
   Badge,
@@ -26,12 +25,13 @@ import {
   Stack,
   Switch,
   Text,
-  TextInput,
   Textarea,
+  TextInput,
   Tooltip,
 } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Markdown from 'react-markdown';
 import { z } from 'zod';
 import { httpErrorToHuman } from '@/api/axios.ts';
 import { useUserSetting, useUserSettingsLoaded } from '@/lib/userSettings.ts';
@@ -79,11 +79,9 @@ function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  const parts = [
-    days > 0 ? `${days}d` : '',
-    hours > 0 ? `${hours}h` : '',
-    minutes > 0 ? `${minutes}m` : '',
-  ].filter(Boolean);
+  const parts = [days > 0 ? `${days}d` : '', hours > 0 ? `${hours}h` : '', minutes > 0 ? `${minutes}m` : ''].filter(
+    Boolean,
+  );
 
   return parts.length > 0 ? parts.join(' ') : `${Math.floor(seconds)}s`;
 }
@@ -99,9 +97,7 @@ type ChatServerStatusResult = {
   server: ChatServerOption;
   resources: ChatServerResources;
 };
-type ChatServerResourcesError =
-  | { kind: 'unavailable' }
-  | { kind: 'request'; message: string };
+type ChatServerResourcesError = { kind: 'unavailable' } | { kind: 'request'; message: string };
 type ChatWidgetResizeOrigin = ChatWidgetSize & {
   pointerId: number;
   pointerX: number;
@@ -109,16 +105,19 @@ type ChatWidgetResizeOrigin = ChatWidgetSize & {
 };
 
 export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode } = {}) {
+  const { user } = useAuth();
+  if (!user) return null;
+
+  return <ChatWidgetSession key={user.uuid} mode={mode} />;
+}
+
+function ChatWidgetSession({ mode }: { mode: ChatWidgetMode }) {
   const isPage = mode === 'page';
   const { user } = useAuth();
   const { addToast } = useToast();
   const { t: tExt } = useExtTranslations();
   const { t: tPanel } = useTranslations();
-  const [sendOnEnter, setSendOnEnter] = useUserSetting(
-    'com.calagopus.chat::send_on_enter',
-    z.boolean(),
-    true,
-  );
+  const [sendOnEnter, setSendOnEnter] = useUserSetting('com.calagopus.chat::send_on_enter', z.boolean(), true);
   const [hasSeenAiOnboarding, setHasSeenAiOnboarding] = useUserSetting(
     'com.calagopus.chat::ai_onboarding_seen',
     z.boolean(),
@@ -146,8 +145,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
   const [chatServersError, setChatServersError] = useState<string | null>(null);
   const [selectedServerUuid, setSelectedServerUuid] = useState<string | null>(null);
   const [serverResourcesLoading, setServerResourcesLoading] = useState(false);
-  const [serverResourcesError, setServerResourcesError] =
-    useState<ChatServerResourcesError | null>(null);
+  const [serverResourcesError, setServerResourcesError] = useState<ChatServerResourcesError | null>(null);
   const [serverStatusResult, setServerStatusResult] = useState<ChatServerStatusResult | null>(null);
   const [composeMode, setComposeMode] = useState<ConversationKind | null>(null);
   const [search, setSearch] = useState('');
@@ -159,8 +157,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
   const [creating, setCreating] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
   const [deletingConversationUuid, setDeletingConversationUuid] = useState<string | null>(null);
-  const [processingServerActionMessageUuid, setProcessingServerActionMessageUuid] =
-    useState<string | null>(null);
+  const [processingServerActionMessageUuid, setProcessingServerActionMessageUuid] = useState<string | null>(null);
   const [floatingSize, setFloatingSize] = useState<ChatWidgetSize | null>(null);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const widgetRef = useRef<HTMLElement | null>(null);
@@ -215,9 +212,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
       const element = widgetRef.current;
       if (!element) return;
 
-      const bottomInset = expanded
-        ? Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height)
-        : 0;
+      const bottomInset = expanded ? Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height) : 0;
       element.style.setProperty('--calagopus-visual-viewport-height', `${viewport.height}px`);
       element.style.setProperty('--calagopus-visual-viewport-bottom-inset', `${bottomInset}px`);
     };
@@ -240,12 +235,9 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
     () => conversations.reduce((total, conversation) => total + conversation.unreadCount, 0),
     [conversations],
   );
-  const activeConversation = conversations.find(
-    (conversation) => conversation.uuid === activeConversationUuid,
-  );
+  const activeConversation = conversations.find((conversation) => conversation.uuid === activeConversationUuid);
   const isAiConversation =
-    activeConversation?.kind === 'ai' ||
-    (activeConversation?.kind === 'group' && activeConversation.aiEnabled);
+    activeConversation?.kind === 'ai' || (activeConversation?.kind === 'group' && activeConversation.aiEnabled);
   const selectedChatServer = chatServers.find((server) => server.uuid === selectedServerUuid);
   const activeServerStatusResult =
     serverStatusResult?.conversationUuid === activeConversationUuid ? serverStatusResult : null;
@@ -273,10 +265,10 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
       case 'expired':
         return tExt('chat.serverActionExpired', {});
       default:
-        return conversation.lastMessage ??
-          (conversation.kind === 'ai'
-            ? tExt('chat.composeTitle', {})
-            : tExt('chat.noMessagesPreview', {}));
+        return (
+          conversation.lastMessage ??
+          (conversation.kind === 'ai' ? tExt('chat.composeTitle', {}) : tExt('chat.noMessagesPreview', {}))
+        );
     }
   };
 
@@ -337,20 +329,23 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
     let active = true;
     setChatServersLoading(true);
     setChatServersError(null);
-    const timeout = window.setTimeout(() => {
-      getChatServers(serverSearch)
-        .then(({ servers: result, truncated }) => {
-          if (!active) return;
-          setChatServers(result);
-          setChatServersTruncated(truncated);
-        })
-        .catch((error) => {
-          if (active) setChatServersError(httpErrorToHuman(error));
-        })
-        .finally(() => {
-          if (active) setChatServersLoading(false);
-        });
-    }, serverSearch ? 250 : 0);
+    const timeout = window.setTimeout(
+      () => {
+        getChatServers(serverSearch)
+          .then(({ servers: result, truncated }) => {
+            if (!active) return;
+            setChatServers(result);
+            setChatServersTruncated(truncated);
+          })
+          .catch((error) => {
+            if (active) setChatServersError(httpErrorToHuman(error));
+          })
+          .finally(() => {
+            if (active) setChatServersLoading(false);
+          });
+      },
+      serverSearch ? 250 : 0,
+    );
 
     return () => {
       active = false;
@@ -524,9 +519,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
 
     const aiWillRespond =
       activeConversation?.kind === 'ai' ||
-      (activeConversation?.kind === 'group' &&
-        activeConversation.aiEnabled &&
-        explicitlyMentionsAi(content));
+      (activeConversation?.kind === 'group' && activeConversation.aiEnabled && explicitlyMentionsAi(content));
 
     setSending(true);
     setDraft('');
@@ -556,8 +549,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
   };
 
   const slashCommandToken = draft.trimStart().split(/\s+/, 1)[0].toLowerCase();
-  const showStatusCommandSuggestion =
-    slashCommandToken.startsWith('/') && '/status'.startsWith(slashCommandToken);
+  const showStatusCommandSuggestion = slashCommandToken.startsWith('/') && '/status'.startsWith(slashCommandToken);
   const statusCommandSearch = draft.trim().match(/^\/status(?:\s+(.*))?$/i)?.[1] ?? '';
   const isStatusCommandDraft = /^\/status(?:\s+.*)?$/i.test(draft.trim());
 
@@ -639,13 +631,17 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
     return floatingWidgetEnabled === null ? (
       <Group justify='center' py='xl'>
         <Loader size='sm' />
-        <Text size='sm' c='dimmed'>{tExt('chat.loadingPageMode', {})}</Text>
+        <Text size='sm' c='dimmed'>
+          {tExt('chat.loadingPageMode', {})}
+        </Text>
       </Group>
     ) : (
       <Paper withBorder radius='md' p='lg' className='calagopus-chat-page-mode-notice'>
         <Stack gap='xs'>
           <Text fw={700}>{tExt('chat.pageModeUnavailableTitle', {})}</Text>
-          <Text size='sm' c='dimmed'>{tExt('chat.pageModeUnavailableDescription', {})}</Text>
+          <Text size='sm' c='dimmed'>
+            {tExt('chat.pageModeUnavailableDescription', {})}
+          </Text>
         </Stack>
       </Paper>
     );
@@ -661,11 +657,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
         <button
           type='button'
           className='calagopus-chat-collapsed'
-          aria-label={
-            unreadCount > 0
-              ? tExt('chat.openUnread', { count: unreadCount })
-              : tExt('chat.open', {})
-          }
+          aria-label={unreadCount > 0 ? tExt('chat.openUnread', { count: unreadCount }) : tExt('chat.open', {})}
           aria-expanded={false}
           onClick={() => setExpanded(true)}
         >
@@ -673,20 +665,11 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
             <FontAwesomeIcon icon={faComments} aria-hidden='true' />
           </span>
           <span className='calagopus-chat-collapsed-copy'>
-            <span className='calagopus-chat-collapsed-title'>
-              {tExt('chat.collapsedTitle', {})}
-            </span>
-            <span className='calagopus-chat-collapsed-subtitle'>
-              {tExt('chat.collapsedSubtitle', {})}
-            </span>
+            <span className='calagopus-chat-collapsed-title'>{tExt('chat.collapsedTitle', {})}</span>
+            <span className='calagopus-chat-collapsed-subtitle'>{tExt('chat.collapsedSubtitle', {})}</span>
           </span>
           {unreadCount > 0 && (
-            <Badge
-              size='sm'
-              color='blue'
-              variant='filled'
-              aria-label={tExt('chat.unread', { count: unreadCount })}
-            >
+            <Badge size='sm' color='blue' variant='filled' aria-label={tExt('chat.unread', { count: unreadCount })}>
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
@@ -758,33 +741,20 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
               </Text>
             </div>
             {unreadCount > 0 && (
-              <Badge
-                size='sm'
-                color='blue'
-                variant='filled'
-                aria-label={tExt('chat.unread', { count: unreadCount })}
-              >
+              <Badge size='sm' color='blue' variant='filled' aria-label={tExt('chat.unread', { count: unreadCount })}>
                 {unreadCount > 99 ? '99+' : unreadCount}
               </Badge>
             )}
             {!activeConversationUuid && !composeMode && (
               <Tooltip label={tExt('chat.newConversation', {})}>
-                <ActionIcon
-                  variant='subtle'
-                  aria-label={tExt('chat.newConversation', {})}
-                  onClick={openNewChat}
-                >
+                <ActionIcon variant='subtle' aria-label={tExt('chat.newConversation', {})} onClick={openNewChat}>
                   <FontAwesomeIcon icon={faPlus} aria-hidden='true' />
                 </ActionIcon>
               </Tooltip>
             )}
             {!isPage && (
               <Tooltip label={tExt('chat.minimize', {})}>
-                <ActionIcon
-                  variant='subtle'
-                  aria-label={tExt('chat.minimize', {})}
-                  onClick={() => setExpanded(false)}
-                >
+                <ActionIcon variant='subtle' aria-label={tExt('chat.minimize', {})} onClick={() => setExpanded(false)}>
                   <FontAwesomeIcon icon={faMinus} aria-hidden='true' />
                 </ActionIcon>
               </Tooltip>
@@ -800,7 +770,9 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                   </div>
                 ) : messages.length === 0 && !activeServerStatusResult ? (
                   <div className='calagopus-chat-centered-state'>
-                    <Text size='sm' c='dimmed'>{tExt('chat.noMessages', {})}</Text>
+                    <Text size='sm' c='dimmed'>
+                      {tExt('chat.noMessages', {})}
+                    </Text>
                   </div>
                 ) : (
                   <Stack gap='xs'>
@@ -816,9 +788,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                               ? message.senderUsername
                               : tExt('chat.formerUser', {})
                         }
-                        onServerActionDecision={(confirm) =>
-                          void decideServerAction(message.uuid, confirm)
-                        }
+                        onServerActionDecision={(confirm) => void decideServerAction(message.uuid, confirm)}
                         serverActionLoading={processingServerActionMessageUuid === message.uuid}
                         serverActionDisabled={processingServerActionMessageUuid !== null}
                       />
@@ -852,45 +822,55 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                       <Group justify='space-between' align='flex-start'>
                         <div>
                           <Text fw={700}>{activeServerStatusResult.server.name}</Text>
-                          <Text size='xs' c='dimmed'>{activeServerStatusResult.server.uuidShort}</Text>
+                          <Text size='xs' c='dimmed'>
+                            {activeServerStatusResult.server.uuidShort}
+                          </Text>
                         </div>
                         <Group gap='xs'>
                           {activeServerStatusResult.server.isSuspended && (
                             <Badge color='red'>{tExt('chat.statusSuspended', {})}</Badge>
                           )}
-                          <Badge
-                            color={activeServerStatusResult.resources.state === 'running' ? 'green' : 'gray'}
-                          >
+                          <Badge color={activeServerStatusResult.resources.state === 'running' ? 'green' : 'gray'}>
                             {activeServerStatusResult.resources.state}
                           </Badge>
                         </Group>
                       </Group>
                       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing='xs' mt='sm'>
                         <div>
-                          <Text size='xs' c='dimmed'>{tExt('chat.statusCpu', {})}</Text>
+                          <Text size='xs' c='dimmed'>
+                            {tExt('chat.statusCpu', {})}
+                          </Text>
                           <Text size='sm'>
                             {activeServerStatusResult.resources.cpuAbsolute.toFixed(1)}% /{' '}
                             {activeServerStatusResult.resources.cpuLimitAbsolute}%
                           </Text>
                         </div>
                         <div>
-                          <Text size='xs' c='dimmed'>{tExt('chat.statusMemory', {})}</Text>
+                          <Text size='xs' c='dimmed'>
+                            {tExt('chat.statusMemory', {})}
+                          </Text>
                           <Text size='sm'>
                             {formatBytes(activeServerStatusResult.resources.memoryBytes)} /{' '}
                             {formatBytes(activeServerStatusResult.resources.memoryLimitBytes)}
                           </Text>
                         </div>
                         <div>
-                          <Text size='xs' c='dimmed'>{tExt('chat.statusDisk', {})}</Text>
+                          <Text size='xs' c='dimmed'>
+                            {tExt('chat.statusDisk', {})}
+                          </Text>
                           <Text size='sm'>{formatBytes(activeServerStatusResult.resources.diskBytes)}</Text>
                         </div>
                         <div>
-                          <Text size='xs' c='dimmed'>{tExt('chat.statusUptime', {})}</Text>
+                          <Text size='xs' c='dimmed'>
+                            {tExt('chat.statusUptime', {})}
+                          </Text>
                           <Text size='sm'>{formatUptime(activeServerStatusResult.resources.uptime)}</Text>
                         </div>
                         {activeServerStatusResult.server.status && (
                           <div>
-                            <Text size='xs' c='dimmed'>{tExt('chat.statusInstall', {})}</Text>
+                            <Text size='xs' c='dimmed'>
+                              {tExt('chat.statusInstall', {})}
+                            </Text>
                             <Text size='sm'>{activeServerStatusResult.server.status}</Text>
                           </div>
                         )}
@@ -912,8 +892,12 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                       className='calagopus-chat-slash-command'
                       onClick={() => openServerStatus(statusCommandSearch)}
                     >
-                      <Text size='sm' fw={600}>/status</Text>
-                      <Text size='xs' c='dimmed'>{tExt('chat.statusCommandDescription', {})}</Text>
+                      <Text size='sm' fw={600}>
+                        /status
+                      </Text>
+                      <Text size='xs' c='dimmed'>
+                        {tExt('chat.statusCommandDescription', {})}
+                      </Text>
                     </button>
                   </Paper>
                 )}
@@ -925,9 +909,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                     onChange={(event) => setSendOnEnter(event.currentTarget.checked)}
                   />
                   <Text size='xs' c='dimmed'>
-                    {sendOnEnter
-                      ? tExt('chat.shiftEnterNewLine', {})
-                      : tExt('chat.controlEnterSends', {})}
+                    {sendOnEnter ? tExt('chat.shiftEnterNewLine', {}) : tExt('chat.controlEnterSends', {})}
                   </Text>
                 </Group>
                 <div className='calagopus-chat-composer-row'>
@@ -953,11 +935,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                     disabled={sending}
                   />
                   <Tooltip
-                    label={
-                      sendOnEnter
-                        ? tExt('chat.sendTooltipEnter', {})
-                        : tExt('chat.sendTooltipControlEnter', {})
-                    }
+                    label={sendOnEnter ? tExt('chat.sendTooltipEnter', {}) : tExt('chat.sendTooltipControlEnter', {})}
                   >
                     <ActionIcon
                       type='submit'
@@ -978,9 +956,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
               </form>
               {activeConversation?.aiEnabled && !aiAvailable && (
                 <Text className='calagopus-chat-ai-notice' size='xs' c='dimmed'>
-                  {activeConversation.kind === 'ai'
-                    ? tExt('chat.aiNotConfigured', {})
-                    : tExt('chat.aiUnavailable', {})}
+                  {activeConversation.kind === 'ai' ? tExt('chat.aiNotConfigured', {}) : tExt('chat.aiUnavailable', {})}
                 </Text>
               )}
             </div>
@@ -1026,7 +1002,9 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                   </Text>
                   {!aiAvailable && (
                     <Paper withBorder radius='sm' p='sm'>
-                      <Text size='sm' c='dimmed'>{tExt('chat.aiUnavailable', {})}</Text>
+                      <Text size='sm' c='dimmed'>
+                        {tExt('chat.aiUnavailable', {})}
+                      </Text>
                     </Paper>
                   )}
                   <Button
@@ -1058,9 +1036,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                         onChange={(event) => setGroupAiEnabled(event.currentTarget.checked)}
                       />
                       <Text size='xs' c='dimmed'>
-                        {aiAvailable
-                          ? tExt('chat.groupAiMentionHint', {})
-                          : tExt('chat.aiUnavailable', {})}
+                        {aiAvailable ? tExt('chat.groupAiMentionHint', {}) : tExt('chat.aiUnavailable', {})}
                       </Text>
                     </Stack>
                   )}
@@ -1111,9 +1087,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                   </div>
                   {composeMode === 'group' && (
                     <Button
-                      onClick={() =>
-                        void startConversation('group', selectedUsers, groupTitle, groupAiEnabled)
-                      }
+                      onClick={() => void startConversation('group', selectedUsers, groupTitle, groupAiEnabled)}
                       loading={creating}
                       disabled={selectedUsers.length < 2}
                       leftSection={<FontAwesomeIcon icon={faUsers} aria-hidden='true' />}
@@ -1155,18 +1129,14 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
                         }}
                       >
                         <span className='calagopus-chat-row-icon'>
-                            <FontAwesomeIcon
-                              icon={conversationIcon(conversation.kind, conversation.aiEnabled)}
-                              aria-hidden='true'
-                            />
+                          <FontAwesomeIcon
+                            icon={conversationIcon(conversation.kind, conversation.aiEnabled)}
+                            aria-hidden='true'
+                          />
                         </span>
                         <span className='calagopus-chat-row-copy'>
-                          <span className='calagopus-chat-row-title'>
-                            {getConversationTitle(conversation)}
-                          </span>
-                          <span className='calagopus-chat-row-preview'>
-                            {getConversationPreview(conversation)}
-                          </span>
+                          <span className='calagopus-chat-row-title'>{getConversationTitle(conversation)}</span>
+                          <span className='calagopus-chat-row-preview'>{getConversationPreview(conversation)}</span>
                         </span>
                         {conversation.kind === 'group' && conversation.aiEnabled && (
                           <Badge size='xs' color='violet' variant='light'>
@@ -1223,11 +1193,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
             >
               {tPanel('common.button.cancel', {})}
             </Button>
-            <Button
-              color='red'
-              loading={deletingConversationUuid !== null}
-              onClick={() => void confirmDeleteChat()}
-            >
+            <Button color='red' loading={deletingConversationUuid !== null} onClick={() => void confirmDeleteChat()}>
               {tExt('chat.deleteConversation', {})}
             </Button>
           </Group>
@@ -1266,9 +1232,7 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
             </Stack>
           </Paper>
           <Group justify='flex-end'>
-            <Button onClick={completeAiOnboarding}>
-              {tExt('chat.aiOnboardingDone', {})}
-            </Button>
+            <Button onClick={completeAiOnboarding}>{tExt('chat.aiOnboardingDone', {})}</Button>
           </Group>
         </Stack>
       </Modal>
@@ -1315,17 +1279,27 @@ export default function ChatWidget({ mode = 'widget' }: { mode?: ChatWidgetMode 
           {chatServersLoading && (
             <Group gap='xs'>
               <Loader size='xs' />
-              <Text size='xs' c='dimmed'>{tExt('chat.statusLoadingServers', {})}</Text>
+              <Text size='xs' c='dimmed'>
+                {tExt('chat.statusLoadingServers', {})}
+              </Text>
             </Group>
           )}
           {chatServersTruncated && (
-            <Text size='xs' c='dimmed'>{tExt('chat.statusServerListLimited', {})}</Text>
+            <Text size='xs' c='dimmed'>
+              {tExt('chat.statusServerListLimited', {})}
+            </Text>
           )}
-          {chatServersError && <Text size='sm' c='red'>{chatServersError}</Text>}
+          {chatServersError && (
+            <Text size='sm' c='red'>
+              {chatServersError}
+            </Text>
+          )}
           {serverResourcesLoading && (
             <Group gap='xs'>
               <Loader size='xs' />
-              <Text size='xs' c='dimmed'>{tExt('chat.statusLoadingDetails', {})}</Text>
+              <Text size='xs' c='dimmed'>
+                {tExt('chat.statusLoadingDetails', {})}
+              </Text>
             </Group>
           )}
           {serverResourcesError && (

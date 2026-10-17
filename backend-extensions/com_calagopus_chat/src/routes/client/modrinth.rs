@@ -16,9 +16,10 @@ const USER_AGENT: &str = concat!(
     env!("CARGO_PKG_VERSION"),
     " (https://calagopus.com)"
 );
+const MAX_MODRINTH_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
 
 async fn get_modrinth_json(state: &shared::State, url: Url) -> ApiResponseResult {
-    let response = state
+    let mut response = state
         .client
         .get(url)
         .header(reqwest::header::USER_AGENT, USER_AGENT)
@@ -35,7 +36,27 @@ async fn get_modrinth_json(state: &shared::State, url: Url) -> ApiResponseResult
         );
     }
 
-    let json = response.json::<serde_json::Value>().await.map_err(|_| {
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_MODRINTH_RESPONSE_BYTES as u64)
+    {
+        return Err(ApiResponse::error("Modrinth returned a response that is too large.")
+            .with_status(StatusCode::BAD_GATEWAY));
+    }
+
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|_| {
+        ApiResponse::error("Modrinth returned an incomplete response.")
+            .with_status(StatusCode::BAD_GATEWAY)
+    })? {
+        if body.len().saturating_add(chunk.len()) > MAX_MODRINTH_RESPONSE_BYTES {
+            return Err(ApiResponse::error("Modrinth returned a response that is too large.")
+                .with_status(StatusCode::BAD_GATEWAY));
+        }
+        body.extend_from_slice(&chunk);
+    }
+
+    let json = serde_json::from_slice::<serde_json::Value>(&body).map_err(|_| {
         ApiResponse::error("Modrinth returned invalid JSON.").with_status(StatusCode::BAD_GATEWAY)
     })?;
 

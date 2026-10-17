@@ -221,8 +221,25 @@ impl ExtensionSettingsData {
             && supported_provider
             && key_configured
             && !self.ai_model.trim().is_empty()
-            && !self.ai_base_url.trim().is_empty()
+            && is_valid_ai_base_url(self.ai_base_url.trim())
     }
+}
+
+fn is_valid_ai_base_url(value: &str) -> bool {
+    if value.len() > 512 {
+        return false;
+    }
+
+    let Ok(url) = Url::parse(value) else {
+        return false;
+    };
+
+    matches!(url.scheme(), "http" | "https")
+        && url.host_str().is_some()
+        && url.username().is_empty()
+        && url.password().is_none()
+        && url.query().is_none()
+        && url.fragment().is_none()
 }
 
 fn is_https_url(value: &str) -> bool {
@@ -234,6 +251,21 @@ fn is_https_url(value: &str) -> bool {
         && url.host_str().is_some()
         && url.username().is_empty()
         && url.password().is_none()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_valid_ai_base_url;
+
+    #[test]
+    fn accepts_http_and_https_ai_base_urls_without_embedded_credentials() {
+        assert!(is_valid_ai_base_url("http://localhost:11434/v1"));
+        assert!(is_valid_ai_base_url("https://api.example.test/v1"));
+        assert!(!is_valid_ai_base_url("https://user:secret@api.example.test/v1"));
+        assert!(!is_valid_ai_base_url("https://api.example.test/v1?key=secret"));
+        assert!(!is_valid_ai_base_url("https://api.example.test/v1#fragment"));
+        assert!(!is_valid_ai_base_url("file:///etc/passwd"));
+    }
 }
 
 #[async_trait::async_trait]

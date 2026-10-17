@@ -113,6 +113,12 @@ export function supportsServerToolPage(
   return getServerToolCapabilities(server)[page];
 }
 
+function eggSelectionIncludes(selectedEggs: string[], eggUuid: string | null | undefined): boolean {
+  if (!eggUuid) return false;
+  const normalizedEggUuid = eggUuid.toLowerCase();
+  return selectedEggs.some((selectedEgg) => selectedEgg.toLowerCase() === normalizedEggUuid);
+}
+
 export function getCachedServerToolPages(): ServerToolPages | null {
   const raw = readStorage(SETTINGS_CACHE_KEY);
   if (!raw) return null;
@@ -201,8 +207,7 @@ export function isServerToolPageAllowedForEgg(
 ): boolean {
   const selectedEggs = eggSettings[page];
   if (selectedEggs === null) return true;
-  const eggUuid = server?.egg?.uuid;
-  return Boolean(eggUuid && selectedEggs.includes(eggUuid));
+  return eggSelectionIncludes(selectedEggs, server?.egg?.uuid);
 }
 
 export function isServerToolPageVisible(page: ServerToolPageKey): boolean {
@@ -214,8 +219,5 @@ export function isServerToolPageVisible(page: ServerToolPageKey): boolean {
 
   const pageSettings = getCachedServerToolPages() ?? serverVisibility.pages;
   const selectedEggs = getCachedServerToolEggSettings()[page];
-  return (
-    pageSettings[page] &&
-    (selectedEggs === null || Boolean(serverVisibility.eggUuid && selectedEggs.includes(serverVisibility.eggUuid)))
-  );
+  return pageSettings[page] && (selectedEggs === null || eggSelectionIncludes(selectedEggs, serverVisibility.eggUuid));
 }
