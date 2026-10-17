@@ -190,6 +190,7 @@ async function copyStagedFiles(
   uuid: string,
   socket: Websocket,
   files: OverrideFile[],
+  overwrite = false,
 ): Promise<number> {
   if (!files.length) return 0;
 
@@ -200,7 +201,7 @@ async function copyStagedFiles(
   const { data } = await axiosInstance.post(`/api/client/servers/${uuid}/files/copy-many`, {
     root: '/',
     files: normalizedFiles.map((file) => ({ from: file.sourcePath, to: file.relativePath })),
-    overwrite: false,
+    overwrite,
   });
 
   await runPanelFileOperation(socket, async () => data.identifier);
@@ -234,11 +235,16 @@ export async function installModrinthFile(
   socket: Websocket,
   folder: '/mods' | '/plugins',
   file: ModrinthVersionFile,
+  options: { replaceExistingFile?: string } = {},
 ): Promise<{ cleanupFailed: boolean }> {
   if (!file.filename.toLowerCase().endsWith('.jar') || !isSafePathSegment(file.filename)) {
     throw new Error('The selected Modrinth version does not contain a .jar file.');
   }
   validateModrinthDownloadUrl(file.url);
+  const targetFilename = options.replaceExistingFile ?? file.filename;
+  if (!isSafePathSegment(targetFilename) || !targetFilename.toLowerCase().endsWith('.jar')) {
+    throw new Error('The target server file name is invalid.');
+  }
 
   const stageName = newStageName();
   const stagePath = `/${stageName}`;
@@ -251,8 +257,13 @@ export async function installModrinthFile(
     await createDirectory(uuid, '/', stageName);
     stageCreated = true;
     await ensureServerDirectory(uuid, folder);
-    if (await getPathEntry(uuid, folder, file.filename)) {
-      throw new Error(`The file ${file.filename} already exists; it was not overwritten.`);
+    const existingTarget = await getPathEntry(uuid, folder, targetFilename);
+    if (options.replaceExistingFile) {
+      if (!existingTarget || !existingTarget.file || existingTarget.directory || existingTarget.symlink) {
+        throw new Error(`The installed file ${targetFilename} could not be safely replaced.`);
+      }
+    } else if (existingTarget) {
+      throw new Error(`The file ${targetFilename} already exists; it was not overwritten.`);
     }
 
     await runPanelFileOperation(socket, () =>
@@ -263,14 +274,19 @@ export async function installModrinthFile(
       }),
     );
 
-    const skipped = await copyStagedFiles(uuid, socket, [
-      {
-        relativePath: `${folder.slice(1)}/${file.filename}`,
-        sourcePath: `${stagePath}/${file.filename}`,
-      },
-    ]);
+    const skipped = await copyStagedFiles(
+      uuid,
+      socket,
+      [
+        {
+          relativePath: `${folder.slice(1)}/${targetFilename}`,
+          sourcePath: `${stagePath}/${file.filename}`,
+        },
+      ],
+      Boolean(options.replaceExistingFile),
+    );
     if (skipped > 0) {
-      throw new Error(`The file ${file.filename} already exists; it was not overwritten.`);
+      throw new Error(`The file ${targetFilename} already exists; it was not overwritten.`);
     }
   } catch (error) {
     failure = error;
@@ -501,13 +517,15 @@ export async function installModrinthModpack(
         throw new Error(`The server modpack file ${targetPath} has an invalid file size.`);
       }
 
-      const url = packFile.downloads.map((candidate) => {
-        try {
-          return validateModrinthDownloadUrl(candidate);
-        } catch {
-          return null;
-        }
-      }).find((candidate): candidate is string => candidate !== null);
+      const url = packFile.downloads
+        .map((candidate) => {
+          try {
+            return validateModrinthDownloadUrl(candidate);
+          } catch {
+            return null;
+          }
+        })
+        .find((candidate): candidate is string => candidate !== null);
 
       if (!url) throw new Error(`The server modpack file ${targetPath} has no trusted Modrinth CDN URL.`);
       if (packFile.fileSize && packFile.fileSize > MAX_MRPACK_SINGLE_FILE_BYTES) {
@@ -532,11 +550,7 @@ export async function installModrinthModpack(
       }
     }
 
-    const serverOverrides = await listOverrideFiles(
-      uuid,
-      `${stagePath}/server-overrides`,
-      MAX_MRPACK_FILE_COUNT,
-    );
+    const serverOverrides = await listOverrideFiles(uuid, `${stagePath}/server-overrides`, MAX_MRPACK_FILE_COUNT);
     for (const override of serverOverrides) {
       if (shouldSkipOverride(override.relativePath, true)) continue;
       planned.set(override.relativePath, {
@@ -600,11 +614,7 @@ export async function installModrinthModpack(
           sourcePath: item.sourcePath!,
         })),
       ];
-      const copySkipped = await copyStagedFiles(
-        uuid,
-        socket,
-        stagedFiles,
-      );
+      const copySkipped = await copyStagedFiles(uuid, socket, stagedFiles);
       skipped += copySkipped;
       installed += Math.max(0, stagedFiles.length - copySkipped);
     }

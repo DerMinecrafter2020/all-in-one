@@ -8,8 +8,8 @@ import ServerPropertiesEditor from './ServerPropertiesEditor.tsx';
 import {
   getCachedServerToolPages,
   isMinecraftEgg,
-  supportsServerToolPage,
   type ServerToolPageKey,
+  supportsServerToolPage,
 } from './serverToolsVisibility.ts';
 import { useExtTranslations } from './translations.ts';
 
@@ -67,11 +67,14 @@ function ServerToolPage({ page }: Props) {
     ['files.read', 'files.read-content', 'files.create', 'files.archive', 'files.delete'],
     false,
   );
+  const canReadServerFiles = useServerCan('files.read');
+  const canDeleteServerFiles = useServerCan('files.delete');
   const canReadConsole = useServerCan(['control.read-console', 'control.console'], false);
   const canReadConsoleOutput = useServerCan('control.read-console');
   const canSendCommands = useServerCan('control.console');
   const canReadFileContents = useServerCan('files.read-content');
   const canWriteFiles = useServerCan('files.create');
+  const canDeleteFiles = useServerCan('files.delete');
   const canRestart = useServerCan('control.restart');
   const canStart = useServerCan('control.start');
   const serverStopped = state === 'offline' && !server.isTransferring && !server.status;
@@ -130,8 +133,11 @@ function ServerToolPage({ page }: Props) {
           <ModrinthManager
             kind='modpack'
             serverUuid={server.uuid}
+            canReadFiles={canReadServerFiles}
+            canDeleteFiles={canDeleteServerFiles}
             canInstall={canInstallModpack}
             serverStopped={serverStopped}
+            serverBusy={serverBusy}
             socketConnected={socketConnected}
             socketInstance={socketInstance}
           />
@@ -141,10 +147,13 @@ function ServerToolPage({ page }: Props) {
           <ModrinthManager
             kind='mod'
             serverUuid={server.uuid}
+            canReadFiles={canReadServerFiles}
+            canDeleteFiles={canDeleteServerFiles}
             targetFolder='/mods'
             loaderOptions={MOD_LOADERS}
             canInstall={canInstallFiles}
             serverStopped={serverStopped}
+            serverBusy={serverBusy}
             socketConnected={socketConnected}
             socketInstance={socketInstance}
           />
@@ -154,10 +163,13 @@ function ServerToolPage({ page }: Props) {
           <ModrinthManager
             kind='plugin'
             serverUuid={server.uuid}
+            canReadFiles={canReadServerFiles}
+            canDeleteFiles={canDeleteServerFiles}
             targetFolder='/plugins'
             loaderOptions={PLUGIN_LOADERS}
             canInstall={canInstallFiles}
             serverStopped={serverStopped}
+            serverBusy={serverBusy}
             socketConnected={socketConnected}
             socketInstance={socketInstance}
           />
@@ -169,8 +181,13 @@ function ServerToolPage({ page }: Props) {
             canReadConsoleOutput={canReadConsoleOutput}
             canSendCommands={canSendCommands}
             canReadFiles={canReadFileContents}
+            canStatFiles={canReadServerFiles}
+            canDeleteFiles={canDeleteFiles}
+            canWriteFiles={canWriteFiles}
             serverUuid={server.uuid}
             serverRunning={state === 'running'}
+            serverStopped={serverStopped}
+            serverBusy={serverBusy}
             socketConnected={socketConnected}
             socketInstance={socketInstance}
           />

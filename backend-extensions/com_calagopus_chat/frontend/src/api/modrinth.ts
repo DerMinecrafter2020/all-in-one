@@ -48,6 +48,7 @@ export type ModrinthProject = z.infer<typeof modrinthProjectSchema>;
 export type ModrinthVersion = z.infer<typeof modrinthVersionSchema>;
 export type ModrinthVersionFile = z.infer<typeof modrinthVersionFileSchema>;
 export type ModrinthProjectType = 'mod' | 'modpack' | 'plugin';
+export type ModrinthSearchIndex = 'relevance' | 'downloads' | 'follows' | 'updated';
 
 const baseUrl = '/api/client/extensions/com.calagopus.chat/modrinth';
 
@@ -56,6 +57,9 @@ export async function searchModrinthProjects(params: {
   projectType: ModrinthProjectType;
   gameVersion?: string;
   loader?: string;
+  index?: ModrinthSearchIndex;
+  limit?: number;
+  offset?: number;
 }) {
   const { data } = await axiosInstance.get(`${baseUrl}/search`, {
     params: {
@@ -63,26 +67,22 @@ export async function searchModrinthProjects(params: {
       project_type: params.projectType,
       game_version: params.gameVersion || undefined,
       loader: params.loader || undefined,
-      limit: 20,
+      index: params.index,
+      limit: params.limit ?? 48,
+      offset: params.offset ?? 0,
     },
   });
 
   return modrinthSearchResponseSchema.parse(data);
 }
 
-export async function getModrinthVersions(
-  projectId: string,
-  filters: { gameVersion?: string; loader?: string } = {},
-) {
-  const { data } = await axiosInstance.get(
-    `${baseUrl}/projects/${encodeURIComponent(projectId)}/versions`,
-    {
-      params: {
-        game_version: filters.gameVersion || undefined,
-        loader: filters.loader || undefined,
-      },
+export async function getModrinthVersions(projectId: string, filters: { gameVersion?: string; loader?: string } = {}) {
+  const { data } = await axiosInstance.get(`${baseUrl}/projects/${encodeURIComponent(projectId)}/versions`, {
+    params: {
+      game_version: filters.gameVersion || undefined,
+      loader: filters.loader || undefined,
     },
-  );
+  });
 
   return z.array(modrinthVersionSchema).parse(data);
 }

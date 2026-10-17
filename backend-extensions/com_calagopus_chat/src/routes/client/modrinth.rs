@@ -51,6 +51,7 @@ mod search {
         project_type: String,
         game_version: Option<String>,
         loader: Option<String>,
+        index: Option<String>,
         limit: Option<u8>,
         offset: Option<u32>,
     }
@@ -60,6 +61,7 @@ mod search {
         ("project_type" = String, Query, description = "One of mod, modpack, or plugin."),
         ("game_version" = Option<String>, Query, description = "Optional Minecraft version filter."),
         ("loader" = Option<String>, Query, description = "Optional Modrinth loader/category filter."),
+        ("index" = Option<String>, Query, description = "Optional sort order: relevance, downloads, follows, or updated."),
         ("limit" = Option<u8>, Query, description = "Maximum number of results."),
         ("offset" = Option<u32>, Query, description = "Result offset."),
     ), responses(
@@ -84,6 +86,9 @@ mod search {
                     || !loader
                         .bytes()
                         .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+            })
+            || query.index.as_deref().is_some_and(|index| {
+                !matches!(index, "relevance" | "downloads" | "follows" | "updated")
             })
         {
             return Err(ApiResponse::error("Invalid Modrinth search parameters.")
@@ -117,6 +122,10 @@ mod search {
             facets.push(vec![format!("categories:{}", loader.trim())]);
         }
         let facets = serde_json::to_string(&facets)?;
+        let index = query
+            .index
+            .as_deref()
+            .unwrap_or(if query_text.is_empty() { "downloads" } else { "relevance" });
         let mut url = Url::parse("https://api.modrinth.com/v2/search")?;
         {
             let mut query_pairs = url.query_pairs_mut();
@@ -133,14 +142,7 @@ mod search {
                     "offset",
                     &query.offset.unwrap_or(0).min(10_000).to_string(),
                 )
-                .append_pair(
-                    "index",
-                    if query_text.is_empty() {
-                        "downloads"
-                    } else {
-                        "relevance"
-                    },
-                );
+                .append_pair("index", index);
         }
 
         get_modrinth_json(&state.0, url).await

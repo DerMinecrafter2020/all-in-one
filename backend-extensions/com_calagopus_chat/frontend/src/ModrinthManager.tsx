@@ -1,21 +1,37 @@
 import { faBoxOpen, faCube, faDownload, faMagnifyingGlass, faPuzzlePiece } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Alert, Badge, Button, Card, Group, Image, Loader, Modal, Select, Stack, Text, TextInput } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Image,
+  Loader,
+  Modal,
+  Pagination,
+  SegmentedControl,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import type { FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { httpErrorToHuman } from '@/api/axios.ts';
+import type { Websocket } from '@/plugins/websocket/Websocket.ts';
+import { useToast } from '@/providers/ToastProvider.tsx';
+import type { ModrinthProject, ModrinthSearchIndex, ModrinthVersion, ModrinthVersionFile } from './api/modrinth.ts';
 import { getModrinthVersions, searchModrinthProjects } from './api/modrinth.ts';
-import type { ModrinthProject, ModrinthVersion, ModrinthVersionFile } from './api/modrinth.ts';
+import type { ModpackInstallProgress } from './api/serverFiles.ts';
 import {
   installModrinthFile,
   installModrinthModpack,
   PanelFileOperationTimeoutError,
   validateModrinthDownloadUrl,
 } from './api/serverFiles.ts';
-import type { ModpackInstallProgress } from './api/serverFiles.ts';
+import InstalledModrinthFiles from './InstalledModrinthFiles.tsx';
 import { useExtTranslations } from './translations.ts';
-import { useToast } from '@/providers/ToastProvider.tsx';
-import type { Websocket } from '@/plugins/websocket/Websocket.ts';
 
 export type ModrinthManagerKind = 'mod' | 'plugin' | 'modpack';
 
@@ -29,8 +45,11 @@ interface Props {
   serverUuid: string;
   targetFolder?: '/mods' | '/plugins';
   loaderOptions?: LoaderOption[];
+  canReadFiles: boolean;
+  canDeleteFiles: boolean;
   canInstall: boolean;
   serverStopped: boolean;
+  serverBusy: boolean;
   socketConnected: boolean;
   socketInstance: Websocket | null;
 }
@@ -66,8 +85,11 @@ export default function ModrinthManager({
   serverUuid,
   targetFolder,
   loaderOptions = [],
+  canReadFiles,
+  canDeleteFiles,
   canInstall,
   serverStopped,
+  serverBusy,
   socketConnected,
   socketInstance,
 }: Props) {
@@ -77,6 +99,11 @@ export default function ModrinthManager({
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [gameVersion, setGameVersion] = useState('');
   const [loader, setLoader] = useState(loaderOptions[0]?.value ?? '');
+  const [managerView, setManagerView] = useState<'browse' | 'installed'>('browse');
+  const [sortIndex, setSortIndex] = useState<ModrinthSearchIndex>('downloads');
+  const [pageSize, setPageSize] = useState('48');
+  const [page, setPage] = useState(1);
+  const [totalHits, setTotalHits] = useState(0);
   const [projects, setProjects] = useState<ModrinthProject[]>([]);
   const [searchLoading, setSearchLoading] = useState(true);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -115,16 +142,21 @@ export default function ModrinthManager({
           projectType: kind,
           gameVersion: gameVersion.trim() || undefined,
           loader: isModpack ? undefined : loader || undefined,
+          index: sortIndex,
+          limit: Number(pageSize),
+          offset: (page - 1) * Number(pageSize),
         });
         setProjects(response.hits);
+        setTotalHits(response.total_hits);
       } catch (error) {
         setSearchError(httpErrorToHuman(error));
         setProjects([]);
+        setTotalHits(0);
       } finally {
         setSearchLoading(false);
       }
     },
-    [gameVersion, isModpack, kind, loader],
+    [gameVersion, isModpack, kind, loader, page, pageSize, sortIndex],
   );
 
   useEffect(() => {
@@ -135,7 +167,8 @@ export default function ModrinthManager({
   const runSearch = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const normalizedQuery = query.trim();
-    if (normalizedQuery === submittedQuery) void loadProjects(normalizedQuery);
+    if (page !== 1) setPage(1);
+    if (normalizedQuery === submittedQuery && page === 1) void loadProjects(normalizedQuery);
     else setSubmittedQuery(normalizedQuery);
   };
 
@@ -170,6 +203,10 @@ export default function ModrinthManager({
     }
     if (requiresStoppedServer && !serverStopped) {
       addToast(t('tools.serverMustBeOffline', {}), 'error');
+      return;
+    }
+    if (serverBusy) {
+      addToast(t('tools.serverBusy', {}), 'error');
       return;
     }
     if (!socketConnected) {
@@ -230,6 +267,8 @@ export default function ModrinthManager({
     : isPlugin
       ? t('tools.searchPluginsPlaceholder', {})
       : t('tools.searchModsPlaceholder', {});
+  const visibleTotal = Math.min(totalHits, 10_000);
+  const pageCount = Math.max(1, Math.ceil(visibleTotal / Number(pageSize)));
 
   return (
     <Stack gap='md'>
@@ -242,108 +281,206 @@ export default function ModrinthManager({
       {!canInstall && <Alert color='yellow'>{t('tools.filePermissionRequired', {})}</Alert>}
       {requiresStoppedServer && !serverStopped && <Alert color='yellow'>{t('tools.serverMustBeOffline', {})}</Alert>}
       {isPlugin && <Alert color='yellow'>{t('tools.pluginInstallRestartWarning', {})}</Alert>}
+      {serverBusy && <Alert color='yellow'>{t('tools.serverBusy', {})}</Alert>}
       {!socketConnected && <Alert color='yellow'>{t('tools.websocketRequired', {})}</Alert>}
       {installSummary && <Alert color='green'>{installSummary}</Alert>}
 
-      <form onSubmit={(event) => void runSearch(event)}>
-        <Stack gap='sm'>
-          <Group align='end' grow wrap='wrap'>
-            <TextInput
-              label={t('tools.searchLabel', {})}
-              placeholder={placeholder}
-              value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              maxLength={100}
-              leftSection={<FontAwesomeIcon icon={faMagnifyingGlass} />}
-            />
-            <TextInput
-              label={t('tools.gameVersion', {})}
-              placeholder={t('tools.anyGameVersion', {})}
-              value={gameVersion}
-              onChange={(event) => setGameVersion(event.currentTarget.value)}
-              maxLength={32}
-            />
-            {!isModpack && (
-              <Select
-                label={t('tools.loader', {})}
-                data={loaderOptions}
-                value={loader}
-                onChange={(value) => setLoader(value ?? '')}
-                allowDeselect={false}
-              />
-            )}
-            <Button type='submit' loading={searchLoading} leftSection={<FontAwesomeIcon icon={faMagnifyingGlass} />}>
-              {t('tools.search', {})}
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-
-      {searchError && <Alert color='red'>{searchError}</Alert>}
-      {searchLoading && (
-        <Group justify='center'>
-          <Loader size='sm' />
-        </Group>
-      )}
-      {!searchLoading && projects.length === 0 && !searchError && (
-        <Text c='dimmed' size='sm'>
-          {t('tools.noSearchResults', {})}
-        </Text>
+      {!isModpack && (
+        <SegmentedControl
+          value={managerView}
+          onChange={(value) => setManagerView(value as 'browse' | 'installed')}
+          data={[
+            { value: 'installed', label: t('tools.installedTab', {}) },
+            { value: 'browse', label: t('tools.browseTab', {}) },
+          ]}
+        />
       )}
 
-      {projects.length > 0 && (
-        <div className='grid grid-cols-1 xl:grid-cols-2 gap-3'>
-          {projects.map((project) => {
-            const iconUrl = safeIconUrl(project.icon_url);
-            return (
-              <Card key={project.project_id} withBorder padding='md' radius='md'>
-                <Group align='flex-start' wrap='nowrap'>
-                  {iconUrl ? (
-                    <Image src={iconUrl} alt='' w={48} h={48} radius='sm' fit='cover' referrerPolicy='no-referrer' />
-                  ) : (
-                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded bg-(--mantine-color-default)'>
-                      <FontAwesomeIcon icon={getProjectKindIcon(kind)} />
-                    </div>
-                  )}
-                  <Stack gap={4} className='min-w-0 flex-1'>
-                    <Group justify='space-between' align='flex-start' wrap='nowrap'>
-                      <div className='min-w-0'>
-                        <Text fw={700} lineClamp={1}>
-                          {project.title}
+      {!isModpack && managerView === 'installed' && targetFolder ? (
+        <InstalledModrinthFiles
+          kind={kind === 'plugin' ? 'plugin' : 'mod'}
+          serverUuid={serverUuid}
+          targetFolder={targetFolder}
+          gameVersion={gameVersion}
+          loader={loader}
+          canReadFiles={canReadFiles}
+          canDeleteFiles={canDeleteFiles}
+          canInstall={canInstall}
+          serverStopped={serverStopped}
+          serverBusy={serverBusy}
+          socketConnected={socketConnected}
+          socketInstance={socketInstance}
+        />
+      ) : (
+        <>
+          <form onSubmit={(event) => void runSearch(event)}>
+            <Stack gap='sm'>
+              <Group align='end' grow wrap='wrap'>
+                <Select
+                  label={t('tools.provider', {})}
+                  data={[{ value: 'modrinth', label: 'Modrinth' }]}
+                  value='modrinth'
+                  disabled
+                />
+                <TextInput
+                  label={t('tools.searchLabel', {})}
+                  placeholder={placeholder}
+                  value={query}
+                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  maxLength={100}
+                  leftSection={<FontAwesomeIcon icon={faMagnifyingGlass} />}
+                />
+                <TextInput
+                  label={t('tools.gameVersion', {})}
+                  placeholder={t('tools.anyGameVersion', {})}
+                  value={gameVersion}
+                  onChange={(event) => {
+                    setGameVersion(event.currentTarget.value);
+                    setPage(1);
+                  }}
+                  maxLength={32}
+                />
+                {!isModpack && (
+                  <Select
+                    label={t('tools.loader', {})}
+                    data={loaderOptions}
+                    value={loader}
+                    onChange={(value) => {
+                      setLoader(value ?? '');
+                      setPage(1);
+                    }}
+                    allowDeselect={false}
+                  />
+                )}
+                <Select
+                  label={t('tools.sortBy', {})}
+                  data={[
+                    { value: 'downloads', label: t('tools.sortDownloads', {}) },
+                    { value: 'relevance', label: t('tools.sortRelevance', {}) },
+                    { value: 'follows', label: t('tools.sortFollows', {}) },
+                    { value: 'updated', label: t('tools.sortUpdated', {}) },
+                  ]}
+                  value={sortIndex}
+                  onChange={(value) => {
+                    if (value) {
+                      setSortIndex(value as ModrinthSearchIndex);
+                      setPage(1);
+                    }
+                  }}
+                  allowDeselect={false}
+                />
+                <Select
+                  label={t('tools.resultsPerPage', {})}
+                  data={[
+                    { value: '24', label: '24' },
+                    { value: '48', label: '48' },
+                  ]}
+                  value={pageSize}
+                  onChange={(value) => {
+                    if (value) {
+                      setPageSize(value);
+                      setPage(1);
+                    }
+                  }}
+                  allowDeselect={false}
+                />
+                <Button
+                  type='submit'
+                  loading={searchLoading}
+                  leftSection={<FontAwesomeIcon icon={faMagnifyingGlass} />}
+                >
+                  {t('tools.search', {})}
+                </Button>
+              </Group>
+            </Stack>
+          </form>
+
+          {searchError && <Alert color='red'>{searchError}</Alert>}
+          {searchLoading && (
+            <Group justify='center'>
+              <Loader size='sm' />
+            </Group>
+          )}
+          {!searchLoading && projects.length > 0 && (
+            <Text size='xs' c='dimmed'>
+              {t('tools.modrinthResultsShowing', {
+                start: (page - 1) * Number(pageSize) + 1,
+                end: Math.min(page * Number(pageSize), visibleTotal),
+                total: visibleTotal,
+              })}
+            </Text>
+          )}
+          {!searchLoading && projects.length === 0 && !searchError && (
+            <Text c='dimmed' size='sm'>
+              {t('tools.noSearchResults', {})}
+            </Text>
+          )}
+
+          {projects.length > 0 && (
+            <div className='grid grid-cols-1 xl:grid-cols-2 gap-3'>
+              {projects.map((project) => {
+                const iconUrl = safeIconUrl(project.icon_url);
+                return (
+                  <Card key={project.project_id} withBorder padding='md' radius='md'>
+                    <Group align='flex-start' wrap='nowrap'>
+                      {iconUrl ? (
+                        <Image
+                          src={iconUrl}
+                          alt=''
+                          w={48}
+                          h={48}
+                          radius='sm'
+                          fit='cover'
+                          referrerPolicy='no-referrer'
+                        />
+                      ) : (
+                        <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded bg-(--mantine-color-default)'>
+                          <FontAwesomeIcon icon={getProjectKindIcon(kind)} />
+                        </div>
+                      )}
+                      <Stack gap={4} className='min-w-0 flex-1'>
+                        <Group justify='space-between' align='flex-start' wrap='nowrap'>
+                          <div className='min-w-0'>
+                            <Text fw={700} lineClamp={1}>
+                              {project.title}
+                            </Text>
+                            <Text size='xs' c='dimmed'>
+                              {t('tools.projectBy', { author: project.author })}
+                            </Text>
+                          </div>
+                          <Badge variant='light'>{formatDownloads(project.downloads)}</Badge>
+                        </Group>
+                        <Text size='sm' c='dimmed' lineClamp={3}>
+                          {project.description}
                         </Text>
-                        <Text size='xs' c='dimmed'>
-                          {t('tools.projectBy', { author: project.author })}
-                        </Text>
-                      </div>
-                      <Badge variant='light'>{formatDownloads(project.downloads)}</Badge>
+                        <Group justify='space-between' mt='xs'>
+                          <Group gap={4}>
+                            {project.categories.slice(0, 3).map((category) => (
+                              <Badge key={category} size='xs' variant='outline'>
+                                {category}
+                              </Badge>
+                            ))}
+                          </Group>
+                          <Button
+                            size='xs'
+                            variant='light'
+                            leftSection={<FontAwesomeIcon icon={faDownload} />}
+                            loading={versionsLoading && selectedProject?.project_id === project.project_id}
+                            onClick={() => void openVersions(project)}
+                          >
+                            {t('tools.chooseVersion', {})}
+                          </Button>
+                        </Group>
+                      </Stack>
                     </Group>
-                    <Text size='sm' c='dimmed' lineClamp={3}>
-                      {project.description}
-                    </Text>
-                    <Group justify='space-between' mt='xs'>
-                      <Group gap={4}>
-                        {project.categories.slice(0, 3).map((category) => (
-                          <Badge key={category} size='xs' variant='outline'>
-                            {category}
-                          </Badge>
-                        ))}
-                      </Group>
-                      <Button
-                        size='xs'
-                        variant='light'
-                        leftSection={<FontAwesomeIcon icon={faDownload} />}
-                        loading={versionsLoading && selectedProject?.project_id === project.project_id}
-                        onClick={() => void openVersions(project)}
-                      >
-                        {t('tools.chooseVersion', {})}
-                      </Button>
-                    </Group>
-                  </Stack>
-                </Group>
-              </Card>
-            );
-          })}
-        </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {pageCount > 1 && <Pagination total={pageCount} value={page} onChange={setPage} withEdges />}
+        </>
       )}
 
       <Modal
@@ -367,6 +504,21 @@ export default function ModrinthManager({
             </Text>
           ) : (
             <>
+              {selectedProject && (
+                <>
+                  <Text size='sm' c='dimmed'>
+                    {t('tools.projectBy', { author: selectedProject.author })}
+                  </Text>
+                  <Text size='sm'>{selectedProject.description}</Text>
+                  <Group gap='xs' wrap='wrap'>
+                    {selectedProject.categories.map((category) => (
+                      <Badge key={category} size='xs' variant='outline'>
+                        {category}
+                      </Badge>
+                    ))}
+                  </Group>
+                </>
+              )}
               <Select
                 label={t('tools.version', {})}
                 data={versions.map((version) => ({
@@ -418,6 +570,7 @@ export default function ModrinthManager({
                     !selectedFile ||
                     !canInstall ||
                     (requiresStoppedServer && !serverStopped) ||
+                    serverBusy ||
                     !socketConnected ||
                     !socketInstance
                   }
