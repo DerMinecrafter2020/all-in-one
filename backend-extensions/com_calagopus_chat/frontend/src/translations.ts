@@ -536,8 +536,17 @@ const translations = defineTranslations({
         pauseWhenEmptySeconds: 'Pause when empty (seconds)',
       },
       serverPropertiesTitle: 'server.properties editor',
-      serverPropertiesEggNotSupported:
-        'The server.properties editor requires a supported Minecraft Java server Egg. The {egg} Egg is not compatible.',
+      serverToolEggRequirements: {
+        modpacks:
+          'Modpacks are not available for the {egg} Egg. Use a compatible Minecraft Java Egg with a mod loader such as Fabric, Forge, NeoForge, or Quilt.',
+        mods: 'Mods are not available for the {egg} Egg. Use a compatible Minecraft Java Egg that supports server mods.',
+        plugins:
+          'Plugins are not available for the {egg} Egg. Use a Minecraft Java Egg that supports server plugins, such as Paper, Purpur, Spigot, or Folia.',
+        players:
+          'Player tools are not available for the {egg} Egg. They require a Minecraft Java server, not Bedrock or a proxy.',
+        serverProperties:
+          'The server.properties editor is not available for the {egg} Egg. It requires a Minecraft Java server, not Bedrock or a proxy.',
+      },
       serverPropertiesDescription:
         'Edit Minecraft Java server.properties in a clear grid of individual settings. Comments and unrecognized lines are preserved.',
       serverPropertiesLoading: 'Loading server.properties…',

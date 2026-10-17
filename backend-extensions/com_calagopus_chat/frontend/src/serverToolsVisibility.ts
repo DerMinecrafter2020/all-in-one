@@ -1,4 +1,4 @@
-import { serverToolPagesSchema, type ServerToolPages } from './lib/schemas.ts';
+import { type ServerToolPages, serverToolPagesSchema } from './lib/schemas.ts';
 
 export type ServerToolPageKey = keyof ServerToolPages;
 
@@ -153,7 +153,7 @@ export function isServerToolPageVisible(page: ServerToolPageKey): boolean {
   if (!serverIdentifier) return false;
 
   const serverVisibility = readServerVisibility(serverIdentifier);
-  if (!serverVisibility?.capabilities[page]) return false;
+  if (!serverVisibility) return false;
 
   const pageSettings = getCachedServerToolPages() ?? serverVisibility.pages;
   return pageSettings[page];

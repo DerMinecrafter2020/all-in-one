@@ -56,6 +56,25 @@ export function ServerPropertiesPage() {
   return <ServerToolPage page='serverProperties' />;
 }
 
+function eggCompatibilityMessage(
+  page: ServerToolPageKey,
+  eggName: string,
+  t: ReturnType<typeof useExtTranslations>['t'],
+) {
+  switch (page) {
+    case 'modpacks':
+      return t('tools.serverToolEggRequirements.modpacks', { egg: eggName });
+    case 'mods':
+      return t('tools.serverToolEggRequirements.mods', { egg: eggName });
+    case 'plugins':
+      return t('tools.serverToolEggRequirements.plugins', { egg: eggName });
+    case 'players':
+      return t('tools.serverToolEggRequirements.players', { egg: eggName });
+    case 'serverProperties':
+      return t('tools.serverToolEggRequirements.serverProperties', { egg: eggName });
+  }
+}
+
 function ServerToolPage({ page }: Props) {
   const { t } = useExtTranslations();
   const server = useServerStore((store) => store.server);
@@ -90,29 +109,11 @@ function ServerToolPage({ page }: Props) {
   };
   const title = pageTitles[page];
 
-  if (!isMinecraftEgg(server)) {
+  if (!isMinecraftEgg(server) || !supportsServerToolPage(server, page)) {
     return (
       <ServerContentContainer title={title}>
         <div className='p-4'>
-          <Alert color='yellow'>
-            {page === 'serverProperties'
-              ? t('tools.serverPropertiesEggNotSupported', { egg: server.egg.name })
-              : t('tools.notMinecraftEgg', {})}
-          </Alert>
-        </div>
-      </ServerContentContainer>
-    );
-  }
-
-  if (!supportsServerToolPage(server, page)) {
-    return (
-      <ServerContentContainer title={title}>
-        <div className='p-4'>
-          <Alert color='yellow'>
-            {page === 'serverProperties'
-              ? t('tools.serverPropertiesEggNotSupported', { egg: server.egg.name })
-              : t('tools.pageNotSupportedForEgg', { egg: server.egg.name })}
-          </Alert>
+          <Alert color='yellow'>{eggCompatibilityMessage(page, server.egg.name, t)}</Alert>
         </div>
       </ServerContentContainer>
     );

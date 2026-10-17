@@ -486,7 +486,13 @@
         "pauseWhenEmptySeconds": "Bei leerem Server pausieren (Sekunden)"
       },
       "serverPropertiesTitle": "server.properties-Editor",
-      "serverPropertiesEggNotSupported": "Der server.properties-Editor benötigt ein unterstütztes Minecraft-Java-Egg. Das Egg {egg} ist nicht kompatibel.",
+      "serverToolEggRequirements": {
+        "modpacks": "Modpacks werden vom Egg {egg} nicht unterstützt. Verwende ein kompatibles Minecraft-Java-Egg mit Loader wie Fabric, Forge, NeoForge oder Quilt.",
+        "mods": "Mods werden vom Egg {egg} nicht unterstützt. Verwende ein kompatibles Minecraft-Java-Egg mit Mod-Unterstützung.",
+        "plugins": "Plugins werden vom Egg {egg} nicht unterstützt. Verwende ein Minecraft-Java-Egg mit Plugin-Unterstützung, zum Beispiel Paper, Purpur, Spigot oder Folia.",
+        "players": "Spielerwerkzeuge sind für das Egg {egg} nicht verfügbar. Sie benötigen einen Minecraft-Java-Server, kein Bedrock oder Proxy.",
+        "serverProperties": "Der server.properties-Editor ist für das Egg {egg} nicht verfügbar. Er benötigt einen Minecraft-Java-Server, kein Bedrock oder Proxy."
+      },
       "serverPropertiesDescription": "Bearbeite die Minecraft-Java-server.properties in einem übersichtlichen Raster aus einzelnen Einstellungen. Kommentare und unbekannte Zeilen bleiben erhalten.",
       "serverPropertiesLoading": "server.properties wird geladen…",
       "serverPropertiesPermissionRequired": "Zum Bearbeiten von server.properties werden files.read-content und files.create benötigt.",
