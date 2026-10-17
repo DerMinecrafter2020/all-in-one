@@ -1,13 +1,15 @@
 # All-in-One changelog
 
+## 0.2.9 — 2026-10-17
+- Added installed/browse views for mods, plugins, and modpacks, including paged Modrinth catalogs, project details, staged updates, and confirmed removals limited to files tracked by All-in-One.
+- Expanded player management with offline players, banned IPs, max-player editing, player details and stats, fixed operator/IP/inventory/kill actions, and a confirmed stopped-server data wipe.
+- Restyled `server.properties` as a responsive settings-card grid and added per-function Egg compatibility notices across all server-tool pages.
+- Moved visible Chat, Chat & AI settings, and Advertising routes under `/all-in-one`; the old Chat and Ads paths redirect to their new locations while the package/API ID remains stable.
+
 ## 0.2.8 — 2026-10-17
 - Reworked the `server.properties` editor into individual setting fields, added a separate Admin sidebar page for each server-tool setting, and added a demo advertising preview.
 - Added a complete German locale for extension UI strings and included locale files in the release archive.
 - Allowed new plugin JARs to be installed while the server is running and added console-detected, whitelist-rejected connection attempts to the ban workflow.
-- Added separate installed/browse views for mods and plugins, with paged Modrinth search, project details, staged version updates, and confirmed file removal.
-- Added an installed-modpack registry with version updates and removal limited to files originally created by All-in-One; existing conflicts remain untouched.
-- Expanded player management with offline players, banned IPs, max-player editing, player details and stats, fixed operator/IP/inventory/kill actions, and a confirmed stopped-server data wipe.
-- Restyled `server.properties` as a responsive settings-card grid and added per-function Egg compatibility notices across all server-tool pages.
 
 ## 0.2.7 — 2026-10-16
 - Rebranded the extension display name to All-in-One while preserving its `com.calagopus.chat` package ID for upgrades.

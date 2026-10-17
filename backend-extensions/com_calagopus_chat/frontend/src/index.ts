@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { createElement, type FC } from 'react';
+import { Navigate } from 'react-router';
 import { Extension, type ExtensionContext } from 'shared';
 import './app.css';
 import AdvertisingBanner from './AdvertisingBanner.tsx';
@@ -17,7 +18,6 @@ import AdvertisingSettingsPage from './AdvertisingSettingsPage.tsx';
 import ChatPage from './ChatPage.tsx';
 import ChatWidget from './ChatWidget.tsx';
 import ConfigurationPage from './ConfigurationPage.tsx';
-import ServerToolsBootstrap from './ServerToolsBootstrap.tsx';
 import {
   ModManagerSettingsPage,
   ModpackInstallerSettingsPage,
@@ -25,6 +25,7 @@ import {
   PluginManagerSettingsPage,
   ServerPropertiesSettingsPage,
 } from './ServerToolSettingsPage.tsx';
+import ServerToolsBootstrap from './ServerToolsBootstrap.tsx';
 import {
   ModManagerPage,
   ModpackInstallerPage,
@@ -34,6 +35,11 @@ import {
 } from './ServerToolsPage.tsx';
 import { isServerToolPageVisible } from './serverToolsVisibility.ts';
 import { getExtTranslations } from './translations.ts';
+
+const LegacyChatRoute: FC = () => createElement(Navigate, { to: '/account/all-in-one/chat', replace: true });
+const LegacyChatSettingsRoute: FC = () => createElement(Navigate, { to: '/admin/all-in-one/settings', replace: true });
+const LegacyAdvertisingRoute: FC = () =>
+  createElement(Navigate, { to: '/admin/all-in-one/advertising', replace: true });
 
 class AllInOneExtension extends Extension {
   public cardConfigurationPage: FC | null = ConfigurationPage;
@@ -45,14 +51,20 @@ class AllInOneExtension extends Extension {
     ctx.extensionRegistry.pages.global.appendComponent(ChatWidget);
     ctx.extensionRegistry.routes.addAccountRoute({
       name: () => getExtTranslations().t('chat.sidebarTitle', {}),
-      path: '/calagopus-chat',
+      path: '/all-in-one/chat',
       icon: faComments,
       element: ChatPage,
       exact: true,
     });
+    ctx.extensionRegistry.routes.addAccountRoute({
+      name: undefined,
+      path: '/calagopus-chat',
+      element: LegacyChatRoute,
+      exact: true,
+    });
     ctx.extensionRegistry.routes.addAdminRoute({
       name: () => getExtTranslations().t('settings.sidebarTitle', {}),
-      path: '/calagopus-chat',
+      path: '/all-in-one/settings',
       icon: faLayerGroup,
       element: ConfigurationPage,
       permission: 'extensions.manage',
@@ -60,12 +72,26 @@ class AllInOneExtension extends Extension {
       exact: true,
     });
     ctx.extensionRegistry.routes.addAdminRoute({
+      name: undefined,
+      path: '/calagopus-chat',
+      element: LegacyChatSettingsRoute,
+      permission: 'extensions.manage',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
       name: () => getExtTranslations().t('ads.sidebarTitle', {}),
-      path: '/calagopus-ads',
+      path: '/all-in-one/advertising',
       icon: faBullhorn,
       element: AdvertisingSettingsPage,
       permission: 'extensions.manage',
       category: 'system',
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: undefined,
+      path: '/calagopus-ads',
+      element: LegacyAdvertisingRoute,
+      permission: 'extensions.manage',
       exact: true,
     });
     ctx.extensionRegistry.routes.addAdminRoute({
