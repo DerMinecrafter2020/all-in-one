@@ -352,7 +352,7 @@ export async function installModrinthFile(
   } finally {
     if (stageCreated && safeToCleanup) {
       try {
-        await deleteFiles(uuid, '/', [stageName]);
+        await deleteFiles(uuid, '/', [stageName], true);
       } catch {
         cleanupFailed = true;
       }
@@ -749,7 +749,7 @@ export async function installModrinthModpack(
     if (stageCreated && safeToCleanup) {
       onProgress({ stage: 'cleanup', current: 0, total: 1 });
       try {
-        await deleteFiles(uuid, '/', [stageName]);
+        await deleteFiles(uuid, '/', [stageName], true);
       } catch {
         cleanupFailed = true;
       }

@@ -3,7 +3,7 @@
 ## Project overview
 
 - This repository contains the All-in-One extension source, not the Panel itself. Its stable package ID is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat`; keep that ID for in-place upgrades unless a package migration is explicitly intended.
-- Current extension version: `0.3.0`. Minimum supported Calagopus Panel version: `1.2.5` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- Current extension version: `0.3.1`. Minimum supported Calagopus Panel version: `1.2.6` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
 - The extension provides direct/group/AI chat, server information and confirmed power actions, advertising placements, and configurable Minecraft-only Modrinth, player, and server.properties pages.
 - The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here and in `.github/workflows/release.yml`.
 
@@ -36,9 +36,9 @@
 
 ## Local development and checks
 
-- Develop against a matching Calagopus Panel `1.2.5` checkout; extension frontend imports use the Panel's `shared` package and `@/` aliases.
+- Develop against a matching Calagopus Panel `1.2.6` checkout; extension frontend imports use the Panel's `shared` package and `@/` aliases.
 - The Panel frontend requires Node.js `>=24` and pnpm `>=11`. Install/build from the Panel checkout's `frontend/` directory before building Rust.
-- Standard local preflight: `pnpm install`, `pnpm build:fast`, then `cargo build --profile heavy-release --package com_calagopus_chat` from the Panel root. CI runs `pnpm build:ci` and builds against `release-1.2.5`.
+- Standard local preflight: `pnpm install`, `pnpm build:fast`, then `cargo build --profile heavy-release --package com_calagopus_chat` from the Panel root. CI runs `pnpm build:ci` and builds against `release-1.2.6`.
 - Do not report a build/test as passing unless it actually ran. If Node, pnpm, Cargo, or Rust are missing, report that and continue with static checks only.
 
 ### Product and security invariants
@@ -49,7 +49,7 @@
 - Direct chats are unique per user pair. Selecting the same person reopens that pair's existing thread; do not create duplicate direct threads.
 - Advertising has four independent placements (`top`, `bottom`, `left`, `right`) and an `all`/`dashboard` scope. Custom image/link creatives and sandboxed HTTPS iframe URLs are supported. Google AdSense's script-based embed is not supported by this CSP-safe implementation; providers must supply an embeddable iframe URL. Do not add raw HTML or scripts, `allow-same-origin`, or Panel-CSP workarounds. The iframe mode intentionally cannot access Panel storage or navigate the top-level Panel page; some ad providers may therefore be incompatible.
 - Keep user-visible advertising opt-in by default. Validate all externally loaded URLs as HTTPS on the backend, mark outbound links `rel="sponsored noopener noreferrer"`, and do not send ad settings/content to the AI provider.
-- Server installers must use Calagopus file APIs and the caller's own server permissions, accept only allowlisted HTTPS Modrinth file hosts, and avoid changing server loaders/startup commands. New installs never overwrite existing files; an explicit user-selected mod/plugin update may replace only its selected JAR after staging. Modpack management records only files newly copied by All-in-One in its protected registry; update may replace those tracked files, while pre-existing conflicts are never claimed or removed. Mod and modpack installs/updates require a stopped server; plugin JARs may be installed, updated, or removed while running, but disk changes do not hot-reload and the loaded plugin changes on restart.
+- Server installers must use Calagopus file APIs and the caller's own server permissions, accept only allowlisted HTTPS Modrinth file hosts, and avoid changing server loaders/startup commands. New installs never overwrite existing files; an explicit user-selected mod/plugin update may replace only its selected JAR after staging. Modpack management records only files newly copied by All-in-One in its protected registry; update may replace those tracked files, while pre-existing conflicts are never claimed or removed. Mod and modpack installs/updates require a stopped server; plugin JARs may be installed, updated, or removed while running, but disk changes do not hot-reload and the loaded plugin changes on restart. On Panel 1.2.6+, normal deletions go to Trash by default; use permanent deletion only for temporary staging cleanup and explicitly confirmed player-data wipes.
 - Player actions are limited to fixed, validated kick, ban/pardon, whitelist, operator, IP-ban, clear-inventory, and kill commands and require `control.console`; reading console responses additionally requires `control.read-console`, while player lists and saved stats require `files.read-content`. Wiping a player's data/advancements/stats requires an explicit confirmation, a fully stopped server, a validated player UUID/world path, and `files.read`, `files.delete`, and `files.read-content`.
 - The `server.properties` editor requires `files.read-content` and `files.create`; starting/restarting after a save also requires `control.start`/`control.restart`.
 - Each server-tool page (modpack, mod, plugin, player, and `server.properties`) has an Admin Egg allowlist (or all Eggs) plus a global page toggle. Loading Egg choices requires `nests.read`; saving requires `extensions.manage`. Controls must also pass the Egg-capability check; show a page-specific compatibility notice instead of rendering incompatible controls. Keep the technical extension package ID stable when changing its display name to All-in-One.
@@ -60,9 +60,9 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.3.0`)
+- The Git tag, prefixed with `v` (for example, `v0.3.1`)
 
-Start from the current version, `0.3.0`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.3.1`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
 0.2.9 → 0.2.10 → 0.2.11 → 0.3.0
@@ -77,7 +77,7 @@ Before preparing or pushing release changes, inspect both local and remote tags 
 
 ## GitHub release and `.c7s.zip`
 
-The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master`. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.5 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
+The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master`. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.6 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
 
 On a branch push, if `v<package version>` already exists remotely, the workflow deliberately skips both preflight and release to avoid duplicate releases. It does not update or recreate the existing release from newer branch commits. Bump to the next unused version before pushing those changes.
 
@@ -89,7 +89,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download `All-in-One.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.0`.
+To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.1`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 

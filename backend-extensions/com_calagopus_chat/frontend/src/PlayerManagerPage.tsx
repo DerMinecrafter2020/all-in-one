@@ -851,7 +851,7 @@ export default function PlayerManagerPage({
           .filter((entry) => entry.file && !entry.symlink && allowedNames.has(entry.name))
           .map((entry) => entry.name);
         if (files.length > 0) {
-          await deleteFiles(serverUuid, directory.path, files);
+          await deleteFiles(serverUuid, directory.path, files, true);
           deleted += files.length;
         }
       } catch (error) {

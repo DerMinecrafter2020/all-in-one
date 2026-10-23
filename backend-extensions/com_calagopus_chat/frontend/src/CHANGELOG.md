@@ -1,5 +1,9 @@
 # All-in-One changelog
 
+## 0.3.1 — 2026-10-23
+- Raised the minimum supported Calagopus Panel version to 1.2.6 and verified the extension against its updated Egg response schema and file APIs.
+- Accounted for the new Trash behavior: temporary staging folders and explicitly wiped player data are permanently deleted; ordinary user-requested removals remain recoverable through Panel Trash.
+
 ## 0.3.0 — 2026-10-18
 - Added per-function Egg selection to the Admin server-tool settings; unsupported Egg pages explain incompatibility while their controls remain gated.
 - Matched `server.properties` cards to consistent heights and aligned labels and inputs.
