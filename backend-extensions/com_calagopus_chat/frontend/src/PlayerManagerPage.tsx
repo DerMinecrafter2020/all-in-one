@@ -13,12 +13,13 @@ import {
   NumberInput,
   SimpleGrid,
   Stack,
+  Switch,
   Table,
   Tabs,
   Text,
   TextInput,
 } from '@mantine/core';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { getHttpStatus, httpErrorToHuman } from '@/api/axios.ts';
 import deleteFiles from '@/api/server/files/deleteFiles.ts';
 import getFileContent from '@/api/server/files/getFileContent.ts';
@@ -29,10 +30,14 @@ import type { Websocket } from '@/plugins/websocket/Websocket.ts';
 import { useToast } from '@/providers/ToastProvider.tsx';
 import { useExtTranslations } from './translations.ts';
 
+const PlayerSkinPreview = lazy(() => import('./PlayerSkinPreview.tsx'));
+
 type PlayerAction =
   | 'kick'
   | 'ban'
   | 'pardon'
+  | 'whitelist-enable'
+  | 'whitelist-disable'
   | 'whitelist-add'
   | 'whitelist-remove'
   | 'op'
@@ -234,43 +239,60 @@ async function readPlayerJsonFile(serverUuid: string, path: string): Promise<Pla
 
 async function readConfiguredServerProperties(
   serverUuid: string,
-): Promise<{ maxPlayers: number | null; worldName: string | null }> {
+): Promise<{ maxPlayers: number | null; worldName: string | null; whitelistEnabled: boolean | null }> {
   try {
     const file = await getFileContent(serverUuid, '/server.properties');
     const text = await file.text();
-    const maxPlayersMatch = text.match(/^\s*max-players\s*=\s*(\d+)\s*$/m);
-    const worldNameMatch = text.match(/^\s*level-name\s*=\s*([^\r\n#]+)\s*$/m);
+    const content = text.startsWith('\uFEFF') ? text.slice(1) : text;
+    const maxPlayersMatch = content.match(/^\s*max-players\s*=\s*(\d+)\s*$/m);
+    const worldNameMatch = content.match(/^\s*level-name\s*=\s*([^\r\n#]+)\s*$/m);
+    const whitelistMatch = content.match(/^\s*white-list\s*=\s*(true|false)\s*$/im);
     return {
       maxPlayers: maxPlayersMatch ? Number(maxPlayersMatch[1]) : null,
       worldName: worldNameMatch?.[1]?.trim() || null,
+      whitelistEnabled: whitelistMatch ? whitelistMatch[1].toLowerCase() === 'true' : null,
     };
   } catch (error) {
-    if (getHttpStatus(error) === 404) return { maxPlayers: null, worldName: null };
+    if (getHttpStatus(error) === 404) {
+      return { maxPlayers: null, worldName: null, whitelistEnabled: null };
+    }
     throw error;
   }
 }
 
-async function saveMaxPlayersProperty(serverUuid: string, value: number): Promise<void> {
+async function saveServerProperty(
+  serverUuid: string,
+  propertyKey: 'max-players' | 'white-list',
+  value: string,
+): Promise<void> {
   const file = await getFileContent(serverUuid, '/server.properties');
   const original = await file.text();
-  const lineEnding = original.match(/\r\n|\n/)?.[0] ?? '\n';
-  const trailingNewline = /(?:\r\n|\n)$/.test(original);
-  const lines = original ? original.split(/\r\n|\n/) : [];
+  const hasBom = original.startsWith('\uFEFF');
+  const content = hasBom ? original.slice(1) : original;
+  const lineEnding = content.match(/\r\n|\n/)?.[0] ?? '\n';
+  const trailingNewline = /(?:\r\n|\n)$/.test(content);
+  const lines = content ? content.split(/\r\n|\n/) : [];
   if (trailingNewline) lines.pop();
 
+  const escapedPropertyKey = propertyKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const propertyPattern = new RegExp(`^(\\s*${escapedPropertyKey}\\s*=\\s*)(.*)$`, 'i');
   let found = false;
   const updated = lines.map((line) => {
-    const match = line.match(/^(\s*max-players\s*=\s*)(.*)$/i);
+    const match = line.match(propertyPattern);
     if (!match) return line;
 
     found = true;
     const suffix = match[2].match(/\s+#.*$/)?.[0] ?? match[2].match(/\s+$/)?.[0] ?? '';
     return `${match[1]}${value}${suffix}`;
   });
-  if (!found) updated.push(`max-players=${value}`);
+  if (!found) updated.push(`${propertyKey}=${value}`);
 
-  const nextContent = updated.join(lineEnding) + (trailingNewline ? lineEnding : '');
+  const nextContent = `${hasBom ? '\uFEFF' : ''}${updated.join(lineEnding)}${trailingNewline ? lineEnding : ''}`;
   await saveFileContent(serverUuid, '/server.properties', nextContent);
+}
+
+async function saveMaxPlayersProperty(serverUuid: string, value: number): Promise<void> {
+  await saveServerProperty(serverUuid, 'max-players', String(value));
 }
 
 function formatPlaytimeTicks(ticks: number): string {
@@ -393,14 +415,30 @@ function parseInventoryItems(value: string): InventoryItem[] {
   });
 }
 
-function buildCommand(action: PlayerAction, username: string): string {
+function buildCommand(action: PlayerAction, username: string, reason = ''): string {
+  const safeReason = reason
+    .split('')
+    .map((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 0x1f || (code >= 0x7f && code <= 0x9f) ? ' ' : character;
+    })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 255);
+  const withReason = (command: string) => (safeReason ? `${command} ${safeReason}` : command);
+
   switch (action) {
     case 'kick':
-      return `kick ${username}`;
+      return withReason(`kick ${username}`);
     case 'ban':
-      return `ban ${username}`;
+      return withReason(`ban ${username}`);
     case 'pardon':
       return `pardon ${username}`;
+    case 'whitelist-enable':
+      return 'whitelist on';
+    case 'whitelist-disable':
+      return 'whitelist off';
     case 'whitelist-add':
       return `whitelist add ${username}`;
     case 'whitelist-remove':
@@ -410,7 +448,7 @@ function buildCommand(action: PlayerAction, username: string): string {
     case 'deop':
       return `deop ${username}`;
     case 'ban-ip':
-      return `ban-ip ${username}`;
+      return withReason(`ban-ip ${username}`);
     case 'pardon-ip':
       return `pardon-ip ${username}`;
     case 'clear-inventory':
@@ -443,7 +481,9 @@ export default function PlayerManagerPage({
   const [playersLoaded, setPlayersLoaded] = useState(false);
   const [nonWhitelistedAttempts, setNonWhitelistedAttempts] = useState<string[]>([]);
   const [maxPlayers, setMaxPlayers] = useState<number | null>(null);
+  const [configuredMaxPlayers, setConfiguredMaxPlayers] = useState<number | null>(null);
   const [worldName, setWorldName] = useState('world');
+  const [whitelistEnabled, setWhitelistEnabled] = useState<boolean | null>(null);
   const [bannedIps, setBannedIps] = useState<BannedIpRecord[]>([]);
   const [cachedPlayers, setCachedPlayers] = useState<PlayerRecord[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
@@ -451,6 +491,7 @@ export default function PlayerManagerPage({
   const [maxPlayersModalOpen, setMaxPlayersModalOpen] = useState(false);
   const [maxPlayersDraft, setMaxPlayersDraft] = useState<number | string>(20);
   const [savingMaxPlayers, setSavingMaxPlayers] = useState(false);
+  const [savingWhitelist, setSavingWhitelist] = useState(false);
   const [wipingPlayer, setWipingPlayer] = useState(false);
   const [tps, setTps] = useState<number[] | null>(null);
   const [tpsLoading, setTpsLoading] = useState(false);
@@ -462,6 +503,7 @@ export default function PlayerManagerPage({
   const [username, setUsername] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [actionReason, setActionReason] = useState('');
   const [pingResults, setPingResults] = useState<Record<string, string>>({});
   const [pingLoading, setPingLoading] = useState<string | null>(null);
   const [inventoryPlayer, setInventoryPlayer] = useState<string | null>(null);
@@ -486,6 +528,8 @@ export default function PlayerManagerPage({
     kick: t('tools.playerActions.kick', {}),
     ban: t('tools.playerActions.ban', {}),
     pardon: t('tools.playerActions.pardon', {}),
+    'whitelist-enable': t('tools.playerActions.whitelist-enable', {}),
+    'whitelist-disable': t('tools.playerActions.whitelist-disable', {}),
     'whitelist-add': t('tools.playerActions.whitelist-add', {}),
     'whitelist-remove': t('tools.playerActions.whitelist-remove', {}),
     op: t('tools.playerActions.op', {}),
@@ -496,6 +540,14 @@ export default function PlayerManagerPage({
     kill: t('tools.playerActions.kill', {}),
     'wipe-data': t('tools.playerActions.wipe-data', {}),
   };
+  const liveMaxPlayers = serverRunning ? maxPlayers : null;
+  const visibleMaxPlayers = liveMaxPlayers ?? configuredMaxPlayers;
+  const maxPlayersPendingRestart =
+    liveMaxPlayers !== null && configuredMaxPlayers !== null && liveMaxPlayers !== configuredMaxPlayers;
+  const isWhitelistToggleAction =
+    pendingAction?.action === 'whitelist-enable' || pendingAction?.action === 'whitelist-disable';
+  const actionSupportsReason =
+    pendingAction?.action === 'kick' || pendingAction?.action === 'ban' || pendingAction?.action === 'ban-ip';
 
   const playerRecords = [...cachedPlayers, ...operators, ...whitelistedPlayers, ...bannedPlayers];
   const playerRecordsByName = new Map<string, PlayerRecord>();
@@ -559,7 +611,8 @@ export default function PlayerManagerPage({
       setOperators(ops);
       setBannedIps(bannedIpRecords);
       setCachedPlayers(cached);
-      if (properties.maxPlayers !== null) setMaxPlayers(properties.maxPlayers);
+      setConfiguredMaxPlayers(properties.maxPlayers);
+      setWhitelistEnabled(properties.whitelistEnabled ?? false);
       if (properties.worldName === null) setWorldName('world');
       else if (/^[A-Za-z0-9._ -]{1,100}$/.test(properties.worldName) && !['.', '..'].includes(properties.worldName)) {
         setWorldName(properties.worldName);
@@ -760,9 +813,29 @@ export default function PlayerManagerPage({
 
   const requestAction = (action: PlayerAction, value: string) => {
     const normalized = value.trim();
-    const validTarget = action === 'pardon-ip' ? isValidIp(normalized) : PLAYER_NAME_PATTERN.test(normalized);
+    const isWhitelistToggle = action === 'whitelist-enable' || action === 'whitelist-disable';
+    const validTarget =
+      isWhitelistToggle || (action === 'pardon-ip' ? isValidIp(normalized) : PLAYER_NAME_PATTERN.test(normalized));
     if (!validTarget) {
       addToast(t('tools.invalidPlayerName', {}), 'error');
+      return;
+    }
+
+    if (isWhitelistToggle) {
+      if (!canReadFiles || !canWriteFiles) {
+        addToast(t('tools.whitelistTogglePermissionRequired', {}), 'error');
+        return;
+      }
+      if (serverBusy) {
+        addToast(t('tools.serverBusy', {}), 'error');
+        return;
+      }
+      if (serverRunning && (!canSendCommands || !socketConnected || !socketInstance)) {
+        addToast(t('tools.playerCommandPermissionRequired', {}), 'error');
+        return;
+      }
+      setActionReason('');
+      setPendingAction({ action, username: '' });
       return;
     }
 
@@ -779,6 +852,7 @@ export default function PlayerManagerPage({
         addToast(t('tools.playerUuidUnavailable', {}), 'error');
         return;
       }
+      setActionReason('');
       setPendingAction({ action, username: normalized });
       return;
     }
@@ -791,6 +865,7 @@ export default function PlayerManagerPage({
       addToast(t('tools.playerServerUnavailable', {}), 'error');
       return;
     }
+    setActionReason('');
     setPendingAction({ action, username: normalized });
   };
 
@@ -812,7 +887,7 @@ export default function PlayerManagerPage({
     setSavingMaxPlayers(true);
     try {
       await saveMaxPlayersProperty(serverUuid, value);
-      setMaxPlayers(value);
+      setConfiguredMaxPlayers(value);
       setMaxPlayersModalOpen(false);
       addToast(t('tools.maxPlayersSaved', { count: value }), 'success');
     } catch (error) {
@@ -865,6 +940,32 @@ export default function PlayerManagerPage({
   const confirmAction = async () => {
     if (!pendingAction) return;
 
+    if (pendingAction.action === 'whitelist-enable' || pendingAction.action === 'whitelist-disable') {
+      const enabled = pendingAction.action === 'whitelist-enable';
+      if (!canReadFiles || !canWriteFiles || serverBusy) return;
+      if (serverRunning && (!canSendCommands || !socketConnected || !socketInstance)) return;
+
+      setSavingWhitelist(true);
+      try {
+        await saveServerProperty(serverUuid, 'white-list', String(enabled));
+        if (serverRunning) socketInstance?.send(SocketRequest.SEND_COMMAND, buildCommand(pendingAction.action, ''));
+        setWhitelistEnabled(enabled);
+        addToast(
+          serverRunning
+            ? t(enabled ? 'tools.whitelistEnabled' : 'tools.whitelistDisabled', {})
+            : t('tools.whitelistSavedForNextStart', {}),
+          'success',
+        );
+        setPendingAction(null);
+        await loadPlayerLists();
+      } catch (error) {
+        addToast(httpErrorToHuman(error), 'error');
+      } finally {
+        setSavingWhitelist(false);
+      }
+      return;
+    }
+
     if (pendingAction.action === 'wipe-data') {
       if (!serverStopped || serverBusy || !canReadFiles || !canStatFiles || !canDeleteFiles) return;
       setWipingPlayer(true);
@@ -883,7 +984,10 @@ export default function PlayerManagerPage({
 
     if (!socketInstance || !canSendCommands || !serverRunning || !socketConnected) return;
 
-    socketInstance.send(SocketRequest.SEND_COMMAND, buildCommand(pendingAction.action, pendingAction.username));
+    socketInstance.send(
+      SocketRequest.SEND_COMMAND,
+      buildCommand(pendingAction.action, pendingAction.username, actionReason),
+    );
     addToast(
       t('tools.playerActionSent', {
         action: actionLabels[pendingAction.action],
@@ -892,6 +996,7 @@ export default function PlayerManagerPage({
       'success',
     );
     setPendingAction(null);
+    setActionReason('');
   };
 
   const requestPing = (player: string) => {
@@ -988,10 +1093,18 @@ export default function PlayerManagerPage({
           <Group justify='space-between'>
             <div>
               <Text fw={600}>{t('tools.onlinePlayers', {})}</Text>
-              {playersLoaded && maxPlayers !== null && (
+              {playersLoaded && visibleMaxPlayers !== null && (
                 <Text size='xs' c='dimmed'>
-                  {t('tools.onlinePlayerCapacity', { online: players.length, max: maxPlayers })}
+                  {t('tools.onlinePlayerCapacity', { online: players.length, max: visibleMaxPlayers })}
                 </Text>
+              )}
+              {maxPlayersPendingRestart && configuredMaxPlayers !== null && liveMaxPlayers !== null && (
+                <Badge size='xs' color='orange' variant='outline'>
+                  {t('tools.maxPlayersPendingRestart', {
+                    configured: configuredMaxPlayers,
+                    live: liveMaxPlayers,
+                  })}
+                </Badge>
               )}
             </div>
             <Group gap='xs'>
@@ -1002,7 +1115,7 @@ export default function PlayerManagerPage({
                   leftSection={<FontAwesomeIcon icon={faPenToSquare} />}
                   disabled={serverBusy}
                   onClick={() => {
-                    setMaxPlayersDraft(maxPlayers ?? 20);
+                    setMaxPlayersDraft(configuredMaxPlayers ?? maxPlayers ?? 20);
                     setMaxPlayersModalOpen(true);
                   }}
                 >
@@ -1035,7 +1148,9 @@ export default function PlayerManagerPage({
                   ? t('tools.tpsUnavailable', {})
                   : t('tools.tpsValue', { values: tps?.join(' · ') ?? '—' })}
             </Badge>
-            {maxPlayers !== null && <Badge variant='outline'>{t('tools.maxPlayers', { count: maxPlayers })}</Badge>}
+            {visibleMaxPlayers !== null && (
+              <Badge variant='outline'>{t('tools.maxPlayers', { count: visibleMaxPlayers })}</Badge>
+            )}
           </Group>
 
           {!canReadConsole || !canSendCommands ? (
@@ -1166,15 +1281,46 @@ export default function PlayerManagerPage({
         </Tabs.Panel>
         <Tabs.Panel value='whitelist' pt='md'>
           {canReadFiles ? (
-            <PlayerListCard
-              records={whitelistedPlayers}
-              emptyLabel={t('tools.noWhitelistedPlayers', {})}
-              loading={loadingLists}
-              canManage={canSendCommands && serverRunning && socketConnected}
-              actionLabel={t('tools.whitelistRemove', {})}
-              onAction={(player) => requestAction('whitelist-remove', player)}
-              onDetails={(record) => openPlayerDetails(record.name)}
-            />
+            <Stack gap='sm'>
+              <Card withBorder padding='md' radius='md'>
+                <Group justify='space-between' align='center' wrap='nowrap'>
+                  <div>
+                    <Text fw={600}>{t('tools.whitelistStatus', {})}</Text>
+                    <Text size='xs' c='dimmed'>
+                      {t('tools.whitelistStatusDescription', {})}
+                    </Text>
+                  </div>
+                  <Switch
+                    aria-label={t('tools.whitelistStatus', {})}
+                    checked={whitelistEnabled ?? false}
+                    disabled={
+                      whitelistEnabled === null ||
+                      !canWriteFiles ||
+                      savingWhitelist ||
+                      loadingLists ||
+                      serverBusy ||
+                      (serverRunning && (!canSendCommands || !socketConnected || !socketInstance))
+                    }
+                    onChange={(event) =>
+                      requestAction(event.currentTarget.checked ? 'whitelist-enable' : 'whitelist-disable', '')
+                    }
+                  />
+                </Group>
+              </Card>
+              {!canWriteFiles && <Alert color='yellow'>{t('tools.whitelistTogglePermissionRequired', {})}</Alert>}
+              {serverRunning && canWriteFiles && (!canSendCommands || !socketConnected || !socketInstance) && (
+                <Alert color='yellow'>{t('tools.whitelistToggleCommandPermissionRequired', {})}</Alert>
+              )}
+              <PlayerListCard
+                records={whitelistedPlayers}
+                emptyLabel={t('tools.noWhitelistedPlayers', {})}
+                loading={loadingLists}
+                canManage={canSendCommands && serverRunning && socketConnected}
+                actionLabel={t('tools.whitelistRemove', {})}
+                onAction={(player) => requestAction('whitelist-remove', player)}
+                onDetails={(record) => openPlayerDetails(record.name)}
+              />
+            </Stack>
           ) : (
             <Alert color='yellow'>{t('tools.playerListsUnavailable', {})}</Alert>
           )}
@@ -1341,6 +1487,7 @@ export default function PlayerManagerPage({
               <Tabs.List grow>
                 <Tabs.Tab value='actions'>{t('tools.playerActionsTab', {})}</Tabs.Tab>
                 <Tabs.Tab value='stats'>{t('tools.playerStatsTab', {})}</Tabs.Tab>
+                <Tabs.Tab value='skin'>{t('tools.playerSkinTab', {})}</Tabs.Tab>
               </Tabs.List>
               <Tabs.Panel value='actions' pt='md'>
                 <Stack gap='md'>
@@ -1498,6 +1645,17 @@ export default function PlayerManagerPage({
                   </Group>
                 </Stack>
               </Tabs.Panel>
+              <Tabs.Panel value='skin' pt='md'>
+                <Suspense
+                  fallback={
+                    <Group justify='center' py='md'>
+                      <Loader size='sm' />
+                    </Group>
+                  }
+                >
+                  <PlayerSkinPreview uuid={selectedPlayerUuid} />
+                </Suspense>
+              </Tabs.Panel>
             </Tabs>
           </Stack>
         )}
@@ -1578,36 +1736,63 @@ export default function PlayerManagerPage({
       <Modal
         opened={pendingAction !== null}
         onClose={() => {
-          if (!wipingPlayer) setPendingAction(null);
+          if (!wipingPlayer && !savingWhitelist) {
+            setPendingAction(null);
+            setActionReason('');
+          }
         }}
         title={t('tools.confirmPlayerAction', {})}
         centered
-        closeOnClickOutside={!wipingPlayer}
-        closeOnEscape={!wipingPlayer}
+        closeOnClickOutside={!wipingPlayer && !savingWhitelist}
+        closeOnEscape={!wipingPlayer && !savingWhitelist}
       >
         {pendingAction && (
           <Stack gap='md'>
             <Text>
               {pendingAction.action === 'wipe-data'
                 ? t('tools.playerWipeConfirmDescription', { username: pendingAction.username })
-                : t('tools.confirmPlayerActionDescription', {
-                    action: actionLabels[pendingAction.action],
-                    username: pendingAction.username,
-                  })}
+                : isWhitelistToggleAction
+                  ? t('tools.whitelistToggleConfirmDescription', { action: actionLabels[pendingAction.action] })
+                  : t('tools.confirmPlayerActionDescription', {
+                      action: actionLabels[pendingAction.action],
+                      username: pendingAction.username,
+                    })}
             </Text>
+            {actionSupportsReason && (
+              <TextInput
+                label={t('tools.playerActionReasonLabel', {})}
+                value={actionReason}
+                maxLength={255}
+                disabled={wipingPlayer || savingWhitelist}
+                onChange={(event) => setActionReason(event.currentTarget.value)}
+              />
+            )}
             {pendingAction.action === 'wipe-data' && (
               <Alert color='red'>{t('tools.playerWipeServerMustBeStopped', {})}</Alert>
             )}
+            {isWhitelistToggleAction && <Alert color='yellow'>{t('tools.whitelistToggleApplyNote', {})}</Alert>}
             <Group justify='flex-end'>
-              <Button variant='default' disabled={wipingPlayer} onClick={() => setPendingAction(null)}>
+              <Button
+                variant='default'
+                disabled={wipingPlayer || savingWhitelist}
+                onClick={() => {
+                  setPendingAction(null);
+                  setActionReason('');
+                }}
+              >
                 {t('tools.cancel', {})}
               </Button>
               <Button
                 color='red'
-                loading={wipingPlayer}
+                loading={wipingPlayer || savingWhitelist}
                 disabled={
-                  pendingAction.action === 'wipe-data' &&
-                  (!serverStopped || serverBusy || !canReadFiles || !canStatFiles || !canDeleteFiles)
+                  pendingAction.action === 'wipe-data'
+                    ? !serverStopped || serverBusy || !canReadFiles || !canStatFiles || !canDeleteFiles
+                    : isWhitelistToggleAction &&
+                      (!canReadFiles ||
+                        !canWriteFiles ||
+                        serverBusy ||
+                        (serverRunning && (!canSendCommands || !socketConnected || !socketInstance)))
                 }
                 onClick={() => void confirmAction()}
               >

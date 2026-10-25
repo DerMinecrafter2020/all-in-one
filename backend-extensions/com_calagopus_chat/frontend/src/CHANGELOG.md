@@ -1,5 +1,8 @@
 # All-in-One changelog
 
+## 0.3.2 — 2026-10-25
+- Added a confirmed whitelist toggle, optional reasons for kick and bans, configured-versus-live player-limit status, and an on-demand 3D skin preview.
+
 ## 0.3.1 — 2026-10-23
 - Raised the minimum supported Calagopus Panel version to 1.2.6 and verified the extension against its updated Egg response schema and file APIs.
 - Accounted for the new Trash behavior: temporary staging folders and explicitly wiped player data are permanently deleted; ordinary user-requested removals remain recoverable through Panel Trash.
