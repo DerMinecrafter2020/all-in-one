@@ -1,5 +1,8 @@
 # All-in-One changelog
 
+## 0.3.3 — 2026-10-25
+- Added automatic Forgejo releases for mirrored GitHub tags, including matching release notes and the `.c7s.zip` asset.
+
 ## 0.3.2 — 2026-10-25
 - Added a confirmed whitelist toggle, optional reasons for kick and bans, configured-versus-live player-limit status, and an on-demand 3D skin preview.
 
