@@ -20,6 +20,8 @@ permissions:
 jobs:
   prepare:
     name: Resolve release version
+    # Forgejo pull mirrors use .forgejo/workflows/mirror-github-release.yml instead.
+    if: ${{ github.server_url == 'https://github.com' }}
     runs-on: ubuntu-24.04
     outputs:
       release_tag: ${{ steps.resolve.outputs.release_tag }}
@@ -96,7 +98,7 @@ jobs:
     name: Build check against Panel ${{ matrix.panel_ref }}
     runs-on: ubuntu-24.04
     needs: prepare
-    if: needs.prepare.outputs.should_release == 'true'
+    if: github.server_url == 'https://github.com' && needs.prepare.outputs.should_release == 'true'
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -217,7 +219,7 @@ jobs:
     name: Package and publish extension
     runs-on: ubuntu-24.04
     needs: [prepare, preflight]
-    if: needs.prepare.outputs.should_release == 'true'
+    if: github.server_url == 'https://github.com' && needs.prepare.outputs.should_release == 'true'
 
     steps:
       - name: Check out source

@@ -78,7 +78,7 @@ Before preparing or pushing release changes, inspect both local and remote tags 
 
 ## GitHub release and `.c7s.zip`
 
-The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master`. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.6 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
+The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master` **only on GitHub.com**; its `ubuntu-24.04` jobs are skipped on Forgejo. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.6 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
 
 On a branch push, if `v<package version>` already exists remotely, the workflow deliberately skips both preflight and release to avoid duplicate releases. It does not update or recreate the existing release from newer branch commits. Bump to the next unused version before pushing those changes.
 
