@@ -1,5 +1,11 @@
 # All-in-One changelog
 
+## 0.3.4 — 2026-10-25
+- Added a Minecraft version changer with MCJars type/version/build browsing and installed-build detection through the Panel file fingerprint API.
+- Added admin settings for an encrypted MCJars organization key, provider ordering, per-type Egg mappings, icon format, opt-in local statistics, and public aggregate statistics.
+- Added a stopped-server installer that stages provider files, validates HTTPS sources and archive paths/sizes, and requires confirmation before moving only conflicting launcher files or provider-required paths to Panel Trash where configured; it never wipes the server root.
+- Applied mapped Egg, startup, `SERVER_JARFILE`, and Java image updates only through the corresponding Panel admin permissions.
+
 ## 0.3.3 — 2026-10-25
 - Added automatic Forgejo releases for mirrored GitHub tags, including matching release notes and the `.c7s.zip` asset.
 

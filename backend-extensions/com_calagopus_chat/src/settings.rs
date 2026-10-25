@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use compact_str::ToCompactString;
+use std::collections::BTreeMap;
 use shared::{
     State,
     extensions::settings::{
@@ -116,6 +117,7 @@ pub struct ServerToolPagesSettings {
     pub plugins: bool,
     pub players: bool,
     pub server_properties: bool,
+    pub minecraft_versions: bool,
 }
 
 impl Default for ServerToolPagesSettings {
@@ -126,6 +128,7 @@ impl Default for ServerToolPagesSettings {
             plugins: true,
             players: true,
             server_properties: true,
+            minecraft_versions: true,
         }
     }
 }
@@ -138,6 +141,7 @@ pub struct ServerToolEggSettings {
     pub plugins: Option<Vec<String>>,
     pub players: Option<Vec<String>>,
     pub server_properties: Option<Vec<String>>,
+    pub minecraft_versions: Option<Vec<String>>,
 }
 
 impl Default for ServerToolEggSettings {
@@ -148,6 +152,7 @@ impl Default for ServerToolEggSettings {
             plugins: None,
             players: None,
             server_properties: None,
+            minecraft_versions: None,
         }
     }
 }
@@ -166,6 +171,73 @@ impl ServerToolEggSettings {
             && valid_egg_ids(&self.plugins)
             && valid_egg_ids(&self.players)
             && valid_egg_ids(&self.server_properties)
+            && valid_egg_ids(&self.minecraft_versions)
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MinecraftVersionTypeOrder {
+    pub category: compact_str::CompactString,
+    pub types: Vec<compact_str::CompactString>,
+}
+
+impl Default for MinecraftVersionTypeOrder {
+    fn default() -> Self {
+        Self {
+            category: compact_str::CompactString::default(),
+            types: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MinecraftVersionEggOverride {
+    pub provider_type: compact_str::CompactString,
+    pub egg_uuid: compact_str::CompactString,
+}
+
+impl Default for MinecraftVersionEggOverride {
+    fn default() -> Self {
+        Self {
+            provider_type: compact_str::CompactString::default(),
+            egg_uuid: compact_str::CompactString::default(),
+        }
+    }
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct MinecraftVersionStats {
+    pub total_installs: u64,
+    pub installs_by_type: BTreeMap<String, u64>,
+    pub installs_by_version: BTreeMap<String, u64>,
+}
+
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MinecraftVersionChangerSettings {
+    pub api_base_url: compact_str::CompactString,
+    pub icon_base_url: compact_str::CompactString,
+    pub icon_format: compact_str::CompactString,
+    pub type_order: Vec<MinecraftVersionTypeOrder>,
+    pub egg_overrides: Vec<MinecraftVersionEggOverride>,
+    pub collect_stats: bool,
+    pub local_stats: MinecraftVersionStats,
+}
+
+impl Default for MinecraftVersionChangerSettings {
+    fn default() -> Self {
+        Self {
+            api_base_url: "https://mcjars.app".into(),
+            icon_base_url: "https://s3.mcjars.app/icons/".into(),
+            icon_format: "png".into(),
+            type_order: Vec::new(),
+            egg_overrides: Vec::new(),
+            collect_stats: false,
+            local_stats: MinecraftVersionStats::default(),
+        }
     }
 }
 
@@ -185,6 +257,8 @@ pub struct ExtensionSettingsData {
     pub advertising: AdvertisingSettings,
     pub server_tool_pages: ServerToolPagesSettings,
     pub server_tool_egg_settings: ServerToolEggSettings,
+    pub minecraft_version_changer: MinecraftVersionChangerSettings,
+    pub minecraft_version_api_key: compact_str::CompactString,
 }
 
 impl Default for ExtensionSettingsData {
@@ -204,6 +278,8 @@ impl Default for ExtensionSettingsData {
             advertising: AdvertisingSettings::default(),
             server_tool_pages: ServerToolPagesSettings::default(),
             server_tool_egg_settings: ServerToolEggSettings::default(),
+            minecraft_version_changer: MinecraftVersionChangerSettings::default(),
+            minecraft_version_api_key: compact_str::CompactString::default(),
         }
     }
 }
@@ -303,16 +379,27 @@ impl SettingsSerializeExt for ExtensionSettingsData {
             .write_raw_setting(
                 "server_tool_egg_settings_config",
                 serde_json::to_string(&self.server_tool_egg_settings)?,
+            )
+            .write_raw_setting(
+                "minecraft_version_changer_config",
+                serde_json::to_string(&self.minecraft_version_changer)?,
             );
 
         let serializer = serializer
             .write_raw_encrypted_setting("ai_api_key", self.ai_api_key.clone())
             .await?;
 
-        Ok(serializer
+        let serializer = serializer
             .write_raw_encrypted_setting(
                 "ai_server_control_api_key",
                 self.ai_server_control_api_key.clone(),
+            )
+            .await?;
+
+        Ok(serializer
+            .write_raw_encrypted_setting(
+                "minecraft_version_api_key",
+                self.minecraft_version_api_key.clone(),
             )
             .await?)
     }
@@ -332,6 +419,10 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
             .unwrap_or_default();
         let ai_server_control_api_key = deserializer
             .read_raw_encrypted_setting("ai_server_control_api_key")
+            .await?
+            .unwrap_or_default();
+        let minecraft_version_api_key = deserializer
+            .read_raw_encrypted_setting("minecraft_version_api_key")
             .await?
             .unwrap_or_default();
 
@@ -368,6 +459,10 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
             .unwrap_or_default();
         let server_tool_egg_settings = deserializer
             .take_raw_setting("server_tool_egg_settings_config")
+            .and_then(|value| serde_json::from_str(value.as_str()).ok())
+            .unwrap_or_default();
+        let minecraft_version_changer = deserializer
+            .take_raw_setting("minecraft_version_changer_config")
             .and_then(|value| serde_json::from_str(value.as_str()).ok())
             .unwrap_or_default();
 
@@ -407,6 +502,8 @@ impl SettingsDeserializeExt for ExtensionSettingsDataDeserializer {
             advertising,
             server_tool_pages,
             server_tool_egg_settings,
+            minecraft_version_changer,
+            minecraft_version_api_key,
         }))
     }
 }

@@ -114,6 +114,7 @@ export const serverToolPagesSchema = z.object({
   plugins: z.boolean(),
   players: z.boolean(),
   serverProperties: z.boolean(),
+  minecraftVersions: z.boolean(),
 });
 
 const eggUuidSelectionSchema = z.array(z.string().uuid()).max(1000).nullable().default(null);
@@ -124,6 +125,7 @@ export const serverToolEggSettingsSchema = z.object({
   plugins: eggUuidSelectionSchema,
   players: eggUuidSelectionSchema,
   serverProperties: eggUuidSelectionSchema,
+  minecraftVersions: eggUuidSelectionSchema,
 });
 
 export const serverToolPagesResponseSchema = z.object({

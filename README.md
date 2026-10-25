@@ -1,6 +1,6 @@
 # All-in-One
 
-A native Calagopus Panel extension that combines a theme-aware chat widget with Modrinth installers, Minecraft player management, and a `server.properties` editor.
+A native Calagopus Panel extension that combines a theme-aware chat widget with Modrinth installers, a Minecraft version changer, Minecraft player management, and a `server.properties` editor.
 
 ## Features
 
@@ -12,8 +12,9 @@ A native Calagopus Panel extension that combines a theme-aware chat widget with 
 - A `/status` chat command with a searchable server picker that reads live status directly from the Panel without an AI-provider call.
 - Admin-configurable top, bottom, left, and right custom image/link or sandboxed iframe banners across authenticated Panel pages.
 - Separate Modrinth modpack, mod, and plugin pages load popular projects automatically, offer version selection, and appear only for compatible Minecraft Eggs. Each function has its own Admin sidebar settings page.
+- The Minecraft version changer browses MCJars server types, versions, and builds, detects known installed JARs by SHA-256 fingerprint, and optionally accepts the Minecraft EULA. It stages and validates downloads and archives; it never wipes the server root. Conflicting launcher files or provider-required paths can be replaced only after review and confirmation, with Panel Trash used where configured. Mapped Egg, startup, `SERVER_JARFILE`, and Java image changes require the corresponding Panel administrator permissions.
 - The Minecraft player manager shows online and offline players, banned/whitelisted/operator lists, and banned IPs. It can toggle the whitelist, attach optional reasons to kick/ban actions, and show configured-versus-live player limits. Inventory/TPS use server commands where supported, ping is shown when available, and an on-demand 3D skin preview loads only after the user requests it (from Minotar).
-- File installs follow the server's Panel permissions and never overwrite existing files. Mods and modpacks require the Java server to be stopped; plugin JARs can be copied while it is running and need a restart before activation. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command. The `server.properties` editor presents each property in its own field, preserves comments and unknown lines, and asks whether to start or restart after saving.
+- Modrinth file installs follow the server's Panel permissions and preserve existing conflicts. Mods and modpacks require the Java server to be stopped; plugin JARs can be copied while it is running and need a restart before activation. Mod and plugin installers let the operator select a matching loader/game version; modpacks do not change the server loader or startup command. The version changer is the separate, explicitly confirmed workflow for replacing only its reviewed server-software paths. The `server.properties` editor presents each property in its own field, preserves comments and unknown lines, and asks whether to start or restart after saving.
 - An animated typing indicator while AI responses are being prepared.
 - Remove a conversation from your own chat list without deleting it for other participants.
 - Conversation history and unread message counts persisted in PostgreSQL.
@@ -23,7 +24,7 @@ A native Calagopus Panel extension that combines a theme-aware chat widget with 
 - AI replies render standard Markdown emphasis and block quotes instead of showing formatting markers literally.
 - Provider-reported input/output token totals for AI requests made by All-in-One Chat.
 - Admin model discovery with a searchable model selector, plus a per-user Enter-to-send preference.
-- Separate **Chat & AI**, **Advertising**, **Modpack installer**, **Mod manager**, **Plugin manager**, **Player manager**, and **server.properties** pages in the Admin sidebar. Each server-tool page can be enabled or disabled independently.
+- Separate **Chat & AI**, **Advertising**, **Modpack installer**, **Mod manager**, **Plugin manager**, **Player manager**, **server.properties**, and **Minecraft version changer** pages in the Admin sidebar. Each server-tool page can be enabled or disabled independently. Version settings include an optional encrypted MCJars organization key, provider ordering, type-to-Egg mappings, icon format, opt-in local aggregate install counts, and public MCJars statistics.
 - API keys are stored through Calagopus's encrypted extension-settings API; chat content and API keys are not written to activity-log payloads.
 - Mantine components and theme CSS variables keep the widget aligned with the active light/dark theme and custom panel palettes.
 - Extension UI strings are available in English and German; German covers all extension translation keys, and other missing locale entries fall back to English.

@@ -26,7 +26,9 @@ import {
   ServerPropertiesSettingsPage,
 } from './ServerToolSettingsPage.tsx';
 import ServerToolsBootstrap from './ServerToolsBootstrap.tsx';
+import MinecraftVersionSettingsPage from './MinecraftVersionSettingsPage.tsx';
 import {
+  MinecraftVersionChangerPage,
   ModManagerPage,
   ModpackInstallerPage,
   PlayerManagerPage,
@@ -139,6 +141,15 @@ class AllInOneExtension extends Extension {
       category: 'system',
       exact: true,
     });
+    ctx.extensionRegistry.routes.addAdminRoute({
+      name: () => getExtTranslations().t('tools.sidebar.minecraftVersions', {}),
+      path: '/all-in-one/minecraft-versions',
+      icon: faCube,
+      element: MinecraftVersionSettingsPage,
+      permission: 'extensions.manage',
+      category: 'system',
+      exact: true,
+    });
     ctx.extensionRegistry.routes.addServerRoute({
       name: () => getExtTranslations().t('tools.sidebar.modpacks', {}),
       path: '/all-in-one/modpacks',
@@ -182,6 +193,15 @@ class AllInOneExtension extends Extension {
       element: ServerPropertiesPage,
       permission: ['files.read-content', 'files.create'],
       filter: () => isServerToolPageVisible('serverProperties'),
+      exact: true,
+    });
+    ctx.extensionRegistry.routes.addServerRoute({
+      name: () => getExtTranslations().t('tools.sidebar.minecraftVersions', {}),
+      path: '/all-in-one/minecraft-versions',
+      icon: faCube,
+      element: MinecraftVersionChangerPage,
+      permission: ['files.read', 'files.read-content'],
+      filter: () => isServerToolPageVisible('minecraftVersions'),
       exact: true,
     });
   }

@@ -3,8 +3,8 @@
 ## Project overview
 
 - This repository contains the All-in-One extension source, not the Panel itself. Its stable package ID is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat`; keep that ID for in-place upgrades unless a package migration is explicitly intended.
-- Current extension version: `0.3.3`. Minimum supported Calagopus Panel version: `1.2.6` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
-- The extension provides direct/group/AI chat, server information and confirmed power actions, advertising placements, and configurable Minecraft-only Modrinth, player, and server.properties pages.
+- Current extension version: `0.3.4`. Minimum supported Calagopus Panel version: `1.2.6` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- The extension provides direct/group/AI chat, server information and confirmed power actions, advertising placements, and configurable Minecraft-only Modrinth, player, server.properties, and Minecraft version changer pages.
 - The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here, in `.github/workflows/release.yml`, and in `.forgejo/workflows/mirror-github-release.yml`.
 
 ## Extension identity and layout
@@ -23,14 +23,14 @@
 - `src/lib.rs`: extension entry point and registration of admin/client API routers.
 - `src/settings.rs`: persistent extension settings. AI provider and Panel control keys use encrypted storage; advertising settings are public configuration, not secrets.
 - `src/routes/admin/settings.rs`: AI and configurable server-page settings API; `src/routes/admin/advertising.rs`: separate ad-settings API guarded by `extensions.manage`.
-- `src/routes/admin/server_tools.rs`: updates server-tool page toggles and per-page Egg allowlists independently from Chat & AI settings.
+- `src/routes/admin/server_tools.rs`: updates server-tool page toggles and per-page Egg allowlists independently from Chat & AI settings; `src/routes/admin/minecraft_versions.rs`: protects MCJars administration, encrypted API-key updates, Egg mappings, and aggregate statistics.
 - `src/routes/client/advertising.rs`: returns only public, enabled banner configuration to authenticated users. It does not require Chat permissions.
 - `src/routes/client/server_tools.rs`: returns only public server-page toggles and Egg allowlists to authenticated users.
 - `src/routes/client/conversations.rs` and `src/routes/client/conversation/`: chat creation, message history, AI tools, and power-action confirmation.
 - `frontend/src/index.ts`: global widget/banner/visibility bootstrap and account/admin/Minecraft server route registration.
 - `frontend/src/ChatWidget.tsx`: direct/group/AI chat UI, onboarding, slash commands, and status view.
 - `frontend/src/AdvertisingBanner.tsx` and `AdvertisingSettingsPage.tsx`: global ad placements and their separate Admin → Advertising page.
-- `src/routes/client/modrinth.rs`, `frontend/src/ServerToolsPage.tsx`, `ServerToolSettingsPage.tsx`, `ModrinthManager.tsx`, `InstalledModrinthFiles.tsx`, `InstalledModrinthModpacks.tsx`, `api/modrinthModpacks.ts`, `PlayerManagerPage.tsx`, `PlayerSkinPreview.tsx`, and `ServerPropertiesEditor.tsx`: authenticated Modrinth browse/version proxy, per-function admin pages, and per-server modpack/mod/plugin/player/properties tools.
+- `src/routes/client/modrinth.rs`, `src/routes/client/minecraft_versions.rs`, `frontend/src/ServerToolsPage.tsx`, `ServerToolSettingsPage.tsx`, `MinecraftVersionSettingsPage.tsx`, `MinecraftVersionChanger.tsx`, `api/minecraftVersionInstall.ts`, `ModrinthManager.tsx`, `InstalledModrinthFiles.tsx`, `InstalledModrinthModpacks.tsx`, `api/modrinthModpacks.ts`, `PlayerManagerPage.tsx`, `PlayerSkinPreview.tsx`, and `ServerPropertiesEditor.tsx`: authenticated Modrinth and MCJars proxies, per-function admin pages, and per-server modpack/mod/plugin/player/properties/version tools.
 - `frontend/src/lib/schemas.ts` and `frontend/src/api/`: API validation, serialization, and frontend request helpers.
 - `migrations/`: PostgreSQL schema changes; use reversible `up.sql` and `down.sql` migrations.
 
@@ -49,10 +49,12 @@
 - Direct chats are unique per user pair. Selecting the same person reopens that pair's existing thread; do not create duplicate direct threads.
 - Advertising has four independent placements (`top`, `bottom`, `left`, `right`) and an `all`/`dashboard` scope. Custom image/link creatives and sandboxed HTTPS iframe URLs are supported. Google AdSense's script-based embed is not supported by this CSP-safe implementation; providers must supply an embeddable iframe URL. Do not add raw HTML or scripts, `allow-same-origin`, or Panel-CSP workarounds. The iframe mode intentionally cannot access Panel storage or navigate the top-level Panel page; some ad providers may therefore be incompatible.
 - Keep user-visible advertising opt-in by default. Validate all externally loaded URLs as HTTPS on the backend, mark outbound links `rel="sponsored noopener noreferrer"`, and do not send ad settings/content to the AI provider.
-- Server installers must use Calagopus file APIs and the caller's own server permissions, accept only allowlisted HTTPS Modrinth file hosts, and avoid changing server loaders/startup commands. New installs never overwrite existing files; an explicit user-selected mod/plugin update may replace only its selected JAR after staging. Modpack management records only files newly copied by All-in-One in its protected registry; update may replace those tracked files, while pre-existing conflicts are never claimed or removed. Mod and modpack installs/updates require a stopped server; plugin JARs may be installed, updated, or removed while running, but disk changes do not hot-reload and the loaded plugin changes on restart. On Panel 1.2.6+, normal deletions go to Trash by default; use permanent deletion only for temporary staging cleanup and explicitly confirmed player-data wipes.
+- Modrinth installers must use Calagopus file APIs and the caller's own server permissions, accept only allowlisted HTTPS Modrinth file hosts, and avoid changing server loaders/startup commands. New mod/plugin installs never overwrite existing files; an explicit user-selected mod/plugin update may replace only its selected JAR after staging. Modpack management records only files newly copied by All-in-One in its protected registry; update may replace those tracked files, while pre-existing conflicts are never claimed or removed. Mod and modpack installs/updates require a stopped server; plugin JARs may be installed, updated, or removed while running, but disk changes do not hot-reload and the loaded plugin changes on restart.
+- The Minecraft version changer proxies MCJars from the backend; keep the optional organization API key encrypted and never return it to server clients. Use Panel 1.2.6's file fingerprint API for installed-version detection, not a Wings patch. Stage downloads under a random server directory; allow only approved HTTPS download hosts and validated paths. Inspect ZIP central/local headers, path names, links, entry counts, and expanded sizes before calling the Panel archive API. Never add a server-wide wipe: protect worlds, mods, plugins, configuration, and EULA files; move only provider-required paths and individually reviewed software-file conflicts to Panel Trash where configured, after explicit confirmation. Require a stopped server and the needed file permissions (including `files.archive` for ZIP plans). Apply mapped Egg/startup and Java-image changes only after the install confirmation and only via Panel admin APIs with the relevant `servers.read`, `servers.update`, `servers.variables`, and `nests.read` permissions. Local version counts are opt-in aggregates without server/user identifiers; icons load from MCJars and may expose visitors' IP addresses, which is disclosed in the UI.
+- On Panel 1.2.6+, normal deletions go to Trash by default; use permanent deletion only for temporary staging cleanup and explicitly confirmed player-data wipes.
 - Player actions are limited to fixed, validated kick, ban/pardon, whitelist, operator, IP-ban, clear-inventory, and kill commands and require `control.console`; optional command reasons must be single-line and bounded. The whitelist enable/disable setting also requires `files.read-content` and `files.create`, and confirmation; applying it immediately on a running server additionally requires `control.console`. Reading console responses additionally requires `control.read-console`, while player lists and saved stats require `files.read-content`. Wiping a player's data/advancements/stats requires an explicit confirmation, a fully stopped server, a validated player UUID/world path, and `files.read`, `files.delete`, and `files.read-content`. The opt-in skin preview fetches only from fixed HTTPS `minotar.net`, with credentials and referrer disabled, and only after the user chooses to load it.
 - The `server.properties` editor requires `files.read-content` and `files.create`; starting/restarting after a save also requires `control.start`/`control.restart`.
-- Each server-tool page (modpack, mod, plugin, player, and `server.properties`) has an Admin Egg allowlist (or all Eggs) plus a global page toggle. Loading Egg choices requires `nests.read`; saving requires `extensions.manage`. Controls must also pass the Egg-capability check; show a page-specific compatibility notice instead of rendering incompatible controls. Keep the technical extension package ID stable when changing its display name to All-in-One.
+- Each server-tool page (modpack, mod, plugin, player, `server.properties`, and Minecraft versions) has an Admin Egg allowlist (or all Eggs) plus a global page toggle. Loading Egg choices requires `nests.read`; saving requires `extensions.manage`. Controls must also pass the Egg-capability check; show a page-specific compatibility notice instead of rendering incompatible controls. Keep the technical extension package ID stable when changing its display name to All-in-One.
 
 ## Extension versioning
 
@@ -60,9 +62,9 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.3.3`)
+- The Git tag, prefixed with `v` (for example, `v0.3.4`)
 
-Start from the current version, `0.3.3`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.3.4`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
 0.2.9 → 0.2.10 → 0.2.11 → 0.3.0
@@ -90,7 +92,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download `All-in-One.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.3`.
+To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.4`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 

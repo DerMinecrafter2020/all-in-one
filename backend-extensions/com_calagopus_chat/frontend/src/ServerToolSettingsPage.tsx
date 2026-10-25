@@ -31,6 +31,8 @@ function getPageTitle(page: ServerToolPageKey, t: ReturnType<typeof useExtTransl
       return t('tools.sidebar.players', {});
     case 'serverProperties':
       return t('tools.sidebar.serverProperties', {});
+    case 'minecraftVersions':
+      return t('tools.sidebar.minecraftVersions', {});
   }
 }
 
@@ -46,6 +48,8 @@ function getSwitchLabel(page: ServerToolPageKey, t: ReturnType<typeof useExtTran
       return t('settings.serverToolPages.players', {});
     case 'serverProperties':
       return t('settings.serverToolPages.serverProperties', {});
+    case 'minecraftVersions':
+      return t('settings.serverToolPages.minecraftVersions', {});
   }
 }
 

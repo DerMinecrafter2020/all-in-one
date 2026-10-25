@@ -26,6 +26,7 @@ const DEFAULT_SERVER_TOOL_EGG_SETTINGS: ServerToolEggSettings = {
   plugins: null,
   players: null,
   serverProperties: null,
+  minecraftVersions: null,
 };
 
 function getEggDetails(server: MinecraftEggCandidate | null | undefined): string {
@@ -47,6 +48,7 @@ export interface ServerToolCapabilities {
   plugins: boolean;
   players: boolean;
   serverProperties: boolean;
+  minecraftVersions: boolean;
 }
 
 function readStorage(key: string): string | null {
@@ -103,6 +105,7 @@ export function getServerToolCapabilities(server: MinecraftEggCandidate | null |
     plugins: java && (pluginServer || genericJavaServer),
     players: java && !proxy,
     serverProperties: java && !proxy,
+    minecraftVersions: java && !proxy,
   };
 }
 

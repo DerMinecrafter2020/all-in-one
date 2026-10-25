@@ -5,6 +5,7 @@ import { useServerStore } from '@/stores/server.ts';
 import ModrinthManager from './ModrinthManager.tsx';
 import PlayerManager from './PlayerManagerPage.tsx';
 import ServerPropertiesEditor from './ServerPropertiesEditor.tsx';
+import MinecraftVersionChanger from './MinecraftVersionChanger.tsx';
 import {
   getCachedServerToolEggSettings,
   getCachedServerToolPages,
@@ -58,6 +59,10 @@ export function ServerPropertiesPage() {
   return <ServerToolPage page='serverProperties' />;
 }
 
+export function MinecraftVersionChangerPage() {
+  return <ServerToolPage page='minecraftVersions' />;
+}
+
 function eggCompatibilityMessage(
   page: ServerToolPageKey,
   eggName: string,
@@ -74,6 +79,8 @@ function eggCompatibilityMessage(
       return t('tools.serverToolEggRequirements.players', { egg: eggName });
     case 'serverProperties':
       return t('tools.serverToolEggRequirements.serverProperties', { egg: eggName });
+    case 'minecraftVersions':
+      return t('tools.serverToolEggRequirements.minecraftVersions', { egg: eggName });
   }
 }
 
@@ -96,6 +103,7 @@ function ServerToolPage({ page }: Props) {
   const canReadFileContents = useServerCan('files.read-content');
   const canWriteFiles = useServerCan('files.create');
   const canDeleteFiles = useServerCan('files.delete');
+  const canArchiveFiles = useServerCan('files.archive');
   const canRestart = useServerCan('control.restart');
   const canStart = useServerCan('control.start');
   const serverStopped = state === 'offline' && !server.isTransferring && !server.status;
@@ -108,6 +116,7 @@ function ServerToolPage({ page }: Props) {
     plugins: t('tools.pluginsTitle', {}),
     players: t('tools.playersTitle', {}),
     serverProperties: t('tools.serverPropertiesTitle', {}),
+    minecraftVersions: t('tools.minecraftVersionsTitle', {}),
   };
   const title = pageTitles[page];
 
@@ -227,6 +236,23 @@ function ServerToolPage({ page }: Props) {
             canWrite={canWriteFiles}
             canRestart={canRestart}
             canStart={canStart}
+            socketConnected={socketConnected}
+            socketInstance={socketInstance}
+          />
+        )}
+
+        {page === 'minecraftVersions' && (
+          <MinecraftVersionChanger
+            server={server}
+            serverUuid={server.uuid}
+            serverState={state}
+            serverBusy={serverBusy}
+            serverStopped={serverStopped}
+            canReadFiles={canReadServerFiles}
+            canReadFileContents={canReadFileContents}
+            canInstallFiles={canInstallFiles}
+            canDeleteFiles={canDeleteFiles}
+            canArchiveFiles={canArchiveFiles}
             socketConnected={socketConnected}
             socketInstance={socketInstance}
           />
