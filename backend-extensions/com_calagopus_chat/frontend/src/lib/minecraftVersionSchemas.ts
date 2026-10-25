@@ -133,6 +133,7 @@ export const minecraftVersionGlobalStatsSchema = z.object({
 });
 
 export type MinecraftVersionType = z.infer<typeof minecraftVersionTypeSchema>;
+export type MinecraftVersionTypeOrder = z.infer<typeof minecraftVersionTypeOrderSchema>;
 export type MinecraftVersionBuild = z.infer<typeof minecraftVersionBuildSchema>;
 export type MinecraftVersionListItem = z.infer<typeof minecraftVersionListItemSchema>;
 export type MinecraftVersionAdminSettings = z.infer<typeof minecraftVersionAdminSettingsSchema>;

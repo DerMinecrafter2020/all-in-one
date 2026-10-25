@@ -250,8 +250,11 @@ export default function MinecraftVersionChanger({
 }: Props) {
   const { t: translate } = useExtTranslations();
   const t = useCallback(
-    (key: string, values: Parameters<typeof translate>[1] = {}) =>
-      translate(key.startsWith('versionChanger.') ? `tools.${key}` : key, values),
+    (key: string, values: Record<string, string | number> = {}) =>
+      translate(
+        (key.startsWith('versionChanger.') ? `tools.${key}` : key) as Parameters<typeof translate>[0],
+        values as Parameters<typeof translate>[1],
+      ),
     [translate],
   );
   const { addToast } = useToast();

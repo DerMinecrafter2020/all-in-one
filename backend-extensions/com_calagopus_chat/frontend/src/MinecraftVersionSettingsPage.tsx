@@ -26,7 +26,8 @@ import { httpErrorToHuman } from '@/api/axios.ts';
 import { useAdminCan } from '@/plugins/usePermissions.ts';
 import { useToast } from '@/providers/ToastProvider.tsx';
 import getAdminSettings from './api/getAdminSettings.ts';
-import getMinecraftVersionAdminSettings, {
+import {
+  getMinecraftVersionAdminSettings,
   updateMinecraftVersionAdminSettings,
 } from './api/minecraftVersionAdminSettings.ts';
 import { getAdminMinecraftVersionTypes, getMinecraftVersionGlobalStats } from './api/minecraftVersions.ts';
@@ -74,8 +75,11 @@ export default function MinecraftVersionSettingsPage() {
   const { addToast } = useToast();
   const { t: translate } = useExtTranslations();
   const t = useCallback(
-    (key: string, values: Parameters<typeof translate>[1] = {}) =>
-      translate(key.startsWith('versionChanger.') ? `tools.${key}` : key, values),
+    (key: string, values: Record<string, string | number> = {}) =>
+      translate(
+        (key.startsWith('versionChanger.') ? `tools.${key}` : key) as Parameters<typeof translate>[0],
+        values as Parameters<typeof translate>[1],
+      ),
     [translate],
   );
   const canReadEggs = useAdminCan('nests.read');

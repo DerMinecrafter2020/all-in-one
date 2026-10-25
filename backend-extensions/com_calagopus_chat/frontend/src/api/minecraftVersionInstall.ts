@@ -899,11 +899,13 @@ export async function prepareMinecraftVersionInstall(
         const entry = entriesByName.get(name);
         if (!entry) continue;
         if (!entry.file || entry.directory || entry.symlink) {
-          if (!rootRemovals.some((path) => file.relativePath === path || file.relativePath.startsWith(`${path}/`))) {
+          if (
+            ![...rootRemovals].some((path) => file.relativePath === path || file.relativePath.startsWith(`${path}/`))
+          ) {
             throw new Error(`A non-file or symbolic link blocks the version installer path ${file.relativePath}.`);
           }
         } else if (
-          !rootRemovals.some((path) => file.relativePath === path || file.relativePath.startsWith(`${path}/`))
+          ![...rootRemovals].some((path) => file.relativePath === path || file.relativePath.startsWith(`${path}/`))
         ) {
           conflicts.push(file.relativePath);
         }
