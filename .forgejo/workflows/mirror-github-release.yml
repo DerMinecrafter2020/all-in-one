@@ -18,7 +18,7 @@ concurrency:
 jobs:
   mirror-release:
     name: Create matching Forgejo release
-    runs-on: ubuntu-latest
+    runs-on: docker
     timeout-minutes: 20
 
     steps:
