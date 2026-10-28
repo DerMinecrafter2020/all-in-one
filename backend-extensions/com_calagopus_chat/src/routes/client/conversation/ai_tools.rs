@@ -5,7 +5,7 @@ use axum::{
 use serde_json::{Value, json};
 use shared::models::{
     server::Server,
-    user::{AuthMethod, CredentialScope, PermissionManager, User},
+    user::{AuthMethod, PermissionManager, User},
 };
 use std::{collections::HashSet, net::IpAddr};
 
@@ -391,17 +391,16 @@ pub(super) async fn require_control_api_key_permission(
     }
 
     let server_identifier = server.uuid.to_string();
-    let control_auth_method = AuthMethod::ApiKey(control_api_key);
-    let control_permissions = PermissionManager::new(&control_user, (&control_auth_method).into());
     let control_server = Server::by_user_identifier(
         &context.state.database,
-        &control_permissions,
+        &control_user,
         &server_identifier,
     )
     .await?
     .ok_or_else(|| anyhow::anyhow!("The configured Panel API key cannot access this server."))?;
 
-    control_permissions
+    let control_auth_method = AuthMethod::ApiKey(control_api_key);
+    PermissionManager::new(&control_user, &control_auth_method)
         .for_server(&control_server)
         .has_server_permission(permission)
         .map_err(|_| {
@@ -415,7 +414,7 @@ async fn accessible_server(
     context: &ToolContext<'_>,
     identifier: &str,
 ) -> Result<Server, anyhow::Error> {
-    Server::by_user_identifier(&context.state.database, context.permissions, identifier)
+    Server::by_user_identifier(&context.state.database, context.user, identifier)
         .await
         .map_err(|_| anyhow::anyhow!("Could not check access to that server."))?
         .ok_or_else(|| anyhow::anyhow!("Server not found or not accessible to the current user."))
@@ -452,14 +451,12 @@ async fn group_accessible_server_uuids(
             return Ok(HashSet::new());
         }
 
-        // Check each member's account grants independently of the requester's API-key scope.
-        let member_permissions = PermissionManager::new(member, CredentialScope::Session);
-        let member_accessible =
-            Server::by_user_uuids(&context.state.database, &member_permissions, server_uuids)
-                .await?
-                .into_iter()
-                .map(|server| server.uuid)
-                .collect::<HashSet<_>>();
+        // Check each member's server access independently of the requester's credentials.
+        let member_accessible = Server::by_user_uuids(&context.state.database, member, server_uuids)
+            .await?
+            .into_iter()
+            .map(|server| server.uuid)
+            .collect::<HashSet<_>>();
         accessible.retain(|server_uuid| member_accessible.contains(server_uuid));
         if accessible.is_empty() {
             break;
