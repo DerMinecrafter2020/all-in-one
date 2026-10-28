@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1320" viewBox="0 0 1600 1320" role="img" aria-labelledby="title desc">
+  <title id="title">Player manager page mockup</title>
+  <desc id="desc">A code-based mockup of the actual PlayerManagerPage layout: notices, non-whitelisted attempts, online players, list tabs, and manage-by-name controls.</desc>
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#182232" />
+      <stop offset="1" stop-color="#101720" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#000" flood-opacity=".18" />
+    </filter>
+  </defs>
+  <rect width="1600" height="1240" fill="url(#page)" />
+  <rect x="54" y="36" width="1492" height="1248" rx="12" fill="#202a38" stroke="#445064" />
+  <rect x="54" y="36" width="1492" height="74" rx="12" fill="#242f3f" />
+  <rect x="54" y="98" width="1492" height="12" fill="#242f3f" />
+  <text x="86" y="82" fill="#f1f5f9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="20" font-weight="700">Player manager</text>
+  <text x="1514" y="79" fill="#a0adbd" text-anchor="end" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Survival Server</text>
+
+  <text x="86" y="145" fill="#b1bdcb" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Review online and offline players, player lists, banned IPs, server capacity, inventory, and selected player stats.</text>
+  <text x="86" y="164" fill="#8794a4" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Sensitive actions require confirmation and the appropriate Panel permissions.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="86" y="187" width="1428" height="132" rx="12" fill="#273242" stroke="#485568" />
+    <rect x="86" y="337" width="1428" height="527" rx="12" fill="#273242" stroke="#485568" />
+    <rect x="86" y="882" width="1428" height="64" rx="12" fill="#273242" stroke="#485568" />
+    <rect x="86" y="1020" width="1428" height="153" rx="12" fill="#273242" stroke="#485568" />
+  </g>
+
+  <text x="112" y="224" fill="#eef3f9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="650">Non-whitelisted connection attempts</text>
+  <text x="112" y="248" fill="#9daaba" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Recent join attempts rejected by the whitelist are detected from console output while this page is open.</text>
+  <text x="112" y="287" fill="#b1bdcb" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">No non-whitelisted attempts have been detected in this session.</text>
+
+  <text x="112" y="378" fill="#eef3f9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="650">Online players</text>
+  <text x="112" y="402" fill="#a8b5c4" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">3 online / 20 max</text>
+  <rect x="1025" y="357" width="153" height="36" rx="8" fill="#344253" stroke="#5b687a" />
+  <text x="1101" y="380" fill="#e0e7ef" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Set max players</text>
+  <rect x="1188" y="357" width="296" height="36" rx="8" fill="#35587e" />
+  <path d="M1208 375a8 8 0 1 1 3 6" fill="none" stroke="#e7f0fa" stroke-width="1.5" />
+  <path d="M1207 369v7h7" fill="none" stroke="#e7f0fa" stroke-width="1.5" />
+  <text x="1350" y="380" fill="#f2f6fb" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="600">Refresh players and TPS</text>
+  <rect x="1294" y="408" width="190" height="30" rx="7" fill="#303d4f" />
+  <text x="1389" y="428" fill="#c6d1de" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Load player lists</text>
+  <rect x="112" y="448" width="119" height="27" rx="13" fill="#344253" />
+  <text x="172" y="466" fill="#dbe4ed" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">TPS: 20 · 20 · 19.9</text>
+  <rect x="240" y="448" width="120" height="27" rx="13" fill="none" stroke="#607087" />
+  <text x="300" y="466" fill="#c8d3df" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Max players: 20</text>
+
+  <rect x="112" y="483" width="1376" height="48" rx="8" fill="#202a37" />
+  <text x="132" y="513" fill="#9dabbc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" letter-spacing=".6">MINECRAFT USERNAME</text>
+  <text x="405" y="513" fill="#9dabbc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" letter-spacing=".6">PING</text>
+  <text x="535" y="513" fill="#9dabbc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" letter-spacing=".6">ACTIONS</text>
+  <path d="M112 531h1376M112 603h1376M112 675h1376M112 747h1376" stroke="#394658" />
+  <text x="132" y="574" fill="#e5ebf2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">AlexMiner</text>
+  <text x="405" y="574" fill="#bdc9d7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">42 ms</text>
+  <rect x="535" y="549" width="86" height="34" rx="7" fill="#384557" />
+  <text x="578" y="571" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Details</text>
+  <rect x="631" y="549" width="70" height="34" rx="7" fill="#303d4f" />
+  <text x="666" y="571" fill="#ced8e4" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ping</text>
+  <rect x="711" y="549" width="90" height="34" rx="7" fill="#303d4f" />
+  <text x="756" y="571" fill="#ced8e4" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Inventory</text>
+  <rect x="811" y="549" width="72" height="34" rx="7" fill="#71503d" />
+  <text x="847" y="571" fill="#fff0e5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Kick</text>
+  <rect x="893" y="549" width="72" height="34" rx="7" fill="#713a45" />
+  <text x="929" y="571" fill="#ffe6e9" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ban</text>
+
+  <text x="132" y="646" fill="#e5ebf2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">StoneFox</text>
+  <text x="405" y="646" fill="#bdc9d7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">68 ms</text>
+  <rect x="535" y="621" width="86" height="34" rx="7" fill="#384557" />
+  <text x="578" y="643" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Details</text>
+  <rect x="631" y="621" width="70" height="34" rx="7" fill="#303d4f" />
+  <text x="666" y="643" fill="#ced8e4" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ping</text>
+  <rect x="711" y="621" width="90" height="34" rx="7" fill="#303d4f" />
+  <text x="756" y="643" fill="#ced8e4" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Inventory</text>
+  <rect x="811" y="621" width="72" height="34" rx="7" fill="#71503d" />
+  <text x="847" y="643" fill="#fff0e5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Kick</text>
+  <rect x="893" y="621" width="72" height="34" rx="7" fill="#713a45" />
+  <text x="929" y="643" fill="#ffe6e9" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ban</text>
+
+  <text x="132" y="718" fill="#e5ebf2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">MossyBuilds</text>
+  <text x="405" y="718" fill="#bdc9d7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">51 ms</text>
+  <rect x="535" y="693" width="86" height="34" rx="7" fill="#384557" />
+  <text x="578" y="715" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Details</text>
+  <rect x="631" y="693" width="70" height="34" rx="7" fill="#303d4f" />
+  <text x="666" y="715" fill="#ced8e4" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ping</text>
+  <rect x="711" y="693" width="90" height="34" rx="7" fill="#303d4f" />
+  <text x="756" y="715" fill="#ced8e4" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Inventory</text>
+  <rect x="811" y="693" width="72" height="34" rx="7" fill="#71503d" />
+  <text x="847" y="715" fill="#fff0e5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Kick</text>
+  <rect x="893" y="693" width="72" height="34" rx="7" fill="#713a45" />
+  <text x="929" y="715" fill="#ffe6e9" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ban</text>
+
+  <rect x="112" y="882" width="1376" height="64" rx="8" fill="#202a37" />
+  <rect x="112" y="882" width="275" height="48" rx="8" fill="#303d4f" />
+  <text x="249" y="912" fill="#f1f5f9" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="650">Banned players (2)</text>
+  <text x="503" y="912" fill="#bdc8d5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Whitelisted players (12)</text>
+  <text x="724" y="912" fill="#bdc8d5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Operators (1)</text>
+  <text x="918" y="912" fill="#bdc8d5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Banned IPs (0)</text>
+  <text x="1122" y="912" fill="#bdc8d5" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Offline players (6)</text>
+  <rect x="112" y="963" width="1376" height="52" rx="7" fill="#202a37" />
+  <text x="132" y="995" fill="#9dabbc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="700">PLAYER</text>
+  <text x="582" y="995" fill="#9dabbc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="700">DETAILS</text>
+  <text x="1130" y="995" fill="#9dabbc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="700">ACTIONS</text>
+  <path d="M112 1015h1376M112 1065h1376" stroke="#394658" />
+  <text x="132" y="1047" fill="#e5ebf2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Griefer_01</text>
+  <text x="582" y="1047" fill="#bdc9d7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Griefing · Never</text>
+  <rect x="1130" y="1028" width="76" height="30" rx="7" fill="#384557" />
+  <text x="1168" y="1048" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">Details</text>
+  <rect x="1216" y="1028" width="76" height="30" rx="7" fill="#455d47" />
+  <text x="1254" y="1048" fill="#e7f5e7" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">Unban</text>
+
+  <rect x="86" y="1100" width="1428" height="153" rx="12" fill="#273242" stroke="#485568" />
+  <text x="112" y="1137" fill="#eff4fa" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="650">Manage a player by username</text>
+  <text x="112" y="1172" fill="#9eabba" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Minecraft username</text>
+  <rect x="112" y="1183" width="450" height="42" rx="8" fill="#1b2532" stroke="#4a5667" />
+  <text x="130" y="1209" fill="#7f8c9d" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">PlayerName</text>
+  <rect x="580" y="1183" width="95" height="42" rx="8" fill="#713a45" />
+  <text x="627" y="1209" fill="#ffe6e9" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Ban</text>
+  <rect x="685" y="1183" width="95" height="42" rx="8" fill="#384557" />
+  <text x="732" y="1209" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Unban</text>
+  <rect x="790" y="1183" width="195" height="42" rx="8" fill="#35587e" />
+  <text x="887" y="1209" fill="#f2f6fb" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Add to whitelist</text>
+  <rect x="995" y="1183" width="220" height="42" rx="8" fill="#384557" />
+  <text x="1105" y="1209" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Remove from whitelist</text>
+  <text x="1510" y="1298" fill="#8491a1" text-anchor="end" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" letter-spacing=".7">CODE-BASED MOCKUP · NOT A LIVE SCREENSHOT</text>
+</svg>

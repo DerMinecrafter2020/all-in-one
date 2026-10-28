@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050" role="img" aria-labelledby="title desc">
+  <title id="title">Minecraft version changer review mockup</title>
+  <desc id="desc">A code-based mockup of the actual version-changer page with installed-build detection and the centered review-install modal.</desc>
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#182232" />
+      <stop offset="1" stop-color="#101720" />
+    </linearGradient>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity=".28" />
+    </filter>
+  </defs>
+  <rect width="1600" height="1050" fill="url(#page)" />
+  <rect x="54" y="36" width="1492" height="980" rx="12" fill="#202a38" stroke="#445064" />
+  <rect x="54" y="36" width="1492" height="70" rx="12" fill="#242f3f" />
+  <rect x="54" y="96" width="1492" height="10" fill="#242f3f" />
+  <text x="84" y="80" fill="#f1f5f9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="700">Minecraft version changer</text>
+  <text x="1514" y="78" fill="#a0adbd" text-anchor="end" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Survival Server</text>
+  <text x="86" y="143" fill="#b1bdcb" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12">Browse Minecraft server software and builds. Install only while the server is stopped.</text>
+  <text x="86" y="164" fill="#8996a6" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">Catalog and build requests go from the Panel server to MCJars. JAR SHA-256 is sent only for lookup; no server or user ID is included.</text>
+  <text x="86" y="181" fill="#8996a6" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">Server type icons load from MCJars and may expose each visitor’s IP address to that image provider.</text>
+
+  <rect x="86" y="205" width="1428" height="135" rx="12" fill="#273242" stroke="#485568" />
+  <text x="112" y="239" fill="#eef3f9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="650">Installed server build</text>
+  <rect x="1340" y="219" width="146" height="32" rx="8" fill="#344253" />
+  <path d="M1357 235a7 7 0 1 1 2.5 5" fill="none" stroke="#e3eaf2" stroke-width="1.4" />
+  <path d="M1356 229v6h6" fill="none" stroke="#e3eaf2" stroke-width="1.4" />
+  <text x="1422" y="239" fill="#e1e8f0" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Refresh detection</text>
+  <text x="112" y="283" fill="#f1f5fb" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" font-weight="700">Paper 1.21.4</text>
+  <text x="112" y="307" fill="#a3afbd" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Detected from /server.jar</text>
+
+  <rect x="86" y="361" width="1428" height="308" rx="12" fill="#273242" stroke="#485568" />
+  <text x="112" y="398" fill="#f0f5fb" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" font-weight="700">Paper</text>
+  <text x="112" y="421" fill="#9ba8b8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Minecraft server software</text>
+  <rect x="1280" y="382" width="206" height="34" rx="8" fill="#344253" />
+  <path d="m1298 399-6-6 6-6" fill="none" stroke="#e4eaf1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="1393" y="404" fill="#e4eaf1" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">All server types</text>
+  <rect x="112" y="436" width="1355" height="36" rx="8" fill="#1f3d36" stroke="#3f7968" />
+  <text x="130" y="459" fill="#b7e8d7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">The configured Paper Java Egg is already assigned to this server.</text>
+  <rect x="112" y="485" width="660" height="52" rx="9" fill="#182330" stroke="#4c5869" />
+  <text x="132" y="506" fill="#8d9aab" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">MINECRAFT / PROJECT VERSION</text>
+  <text x="132" y="526" fill="#e5ebf2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">1.21.4 · 48</text>
+  <path d="m743 501 6 6 6-6" fill="none" stroke="#9aa6b5" stroke-width="1.4" />
+  <rect x="807" y="485" width="660" height="52" rx="9" fill="#182330" stroke="#4c5869" />
+  <text x="827" y="506" fill="#8d9aab" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">BUILD</text>
+  <text x="827" y="526" fill="#e5ebf2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Paper 228</text>
+  <path d="m1434 501 6 6 6-6" fill="none" stroke="#9aa6b5" stroke-width="1.4" />
+  <rect x="1284" y="553" width="183" height="40" rx="8" fill="#477da9" />
+  <text x="1375" y="578" fill="#f4f8fc" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="650">Review installation</text>
+
+  <rect width="1600" height="1050" fill="#05080e" opacity=".56" />
+  <g filter="url(#shadow)">
+    <rect x="422" y="122" width="756" height="805" rx="14" fill="#263241" stroke="#59677a" />
+  </g>
+  <text x="462" y="171" fill="#f1f5fa" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="700">Review Minecraft version installation</text>
+  <path d="M422 193h756" stroke="#59677a" />
+  <text x="462" y="229" fill="#dce4ed" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">Install Paper 1.21.4 (Paper 228)? The server must remain stopped</text>
+  <text x="462" y="249" fill="#dce4ed" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">until the installation finishes.</text>
+  <rect x="462" y="273" width="676" height="82" rx="9" fill="#45391f" stroke="#88703a" />
+  <path d="M485 293l9 17h-18z" fill="#e7bf62" />
+  <text x="510" y="300" fill="#f2d99a" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="650">Worlds, player data, mods, plugins, configuration files, and other</text>
+  <text x="510" y="320" fill="#dacb9f" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">unrelated files are preserved. Only reviewed installer paths can change.</text>
+  <text x="462" y="387" fill="#edf2f8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" font-weight="650">Provider installation plan</text>
+  <text x="462" y="414" fill="#bec9d7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">Downloads: server.jar</text>
+  <rect x="462" y="435" width="16" height="16" rx="3" fill="#3b82c4" />
+  <path d="m466 443 3 3 5-7" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="490" y="448" fill="#dce4ed" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10">I accept the Minecraft EULA and allow writing eula=true to eula.txt.</text>
+  <text x="462" y="489" fill="#edf2f8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" font-weight="650">6 staged files (82,400,000 bytes) are ready to install.</text>
+  <rect x="462" y="507" width="676" height="130" rx="8" fill="#392d32" stroke="#8d4f52" />
+  <text x="482" y="532" fill="#ffb8b5" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="650">2 existing server software files conflict with this build:</text>
+  <rect x="482" y="546" width="636" height="72" rx="5" fill="#1b2532" stroke="#536176" />
+  <text x="496" y="568" fill="#dce4ed" font-family="Consolas,Menlo,monospace" font-size="11">/server.jar</text>
+  <text x="496" y="589" fill="#dce4ed" font-family="Consolas,Menlo,monospace" font-size="11">/libraries/net/papermc/paperclip/launcher.jar</text>
+  <rect x="462" y="660" width="16" height="16" rx="3" fill="#3b82c4" />
+  <path d="m466 668 3 3 5-7" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="490" y="673" fill="#dce4ed" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" font-weight="600">Confirm replacing the listed server software files</text>
+  <text x="490" y="693" fill="#aab6c5" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="9">Only these reviewed paths are replaced; existing files go to Panel Trash where supported.</text>
+  <path d="M422 733h756" stroke="#59677a" />
+  <rect x="876" y="758" width="112" height="42" rx="8" fill="#303d4f" stroke="#59677a" />
+  <text x="932" y="784" fill="#e0e7ef" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11">Cancel</text>
+  <rect x="1000" y="758" width="138" height="42" rx="8" fill="#b76a34" />
+  <text x="1069" y="784" fill="#fff" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="11" font-weight="650">Apply reviewed version</text>
+  <text x="1540" y="1025" fill="#aab4c1" text-anchor="end" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="10" letter-spacing=".7">CODE-BASED MOCKUP · NOT A LIVE SCREENSHOT</text>
+</svg>
