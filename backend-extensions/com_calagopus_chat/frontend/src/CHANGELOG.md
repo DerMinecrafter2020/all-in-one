@@ -1,5 +1,8 @@
 # All-in-One changelog
 
+## 0.3.5 — 2026-10-28
+- Set the current All-in-One release version to 0.3.5; the extension continues to require Calagopus Panel `>=1.2.6`.
+
 ## 0.3.4 — 2026-10-25
 - Added a Minecraft version changer with MCJars type/version/build browsing and installed-build detection through the Panel file fingerprint API.
 - Added admin settings for an encrypted MCJars organization key, provider ordering, per-type Egg mappings, icon format, opt-in local statistics, and public aggregate statistics.
