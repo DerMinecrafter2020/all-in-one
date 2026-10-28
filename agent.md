@@ -3,7 +3,7 @@
 ## Project overview
 
 - This repository contains the All-in-One extension source, not the Panel itself. Its stable package ID is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat`; keep that ID for in-place upgrades unless a package migration is explicitly intended.
-- Current extension version: `0.3.5`. Minimum supported Calagopus Panel version: `1.2.6` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- Current extension version: `0.3.6`. Minimum supported Calagopus Panel version: `1.2.6` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
 - The extension provides direct/group/AI chat, server information and confirmed power actions, advertising placements, and configurable Minecraft-only Modrinth, player, server.properties, and Minecraft version changer pages.
 - The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here, in `.github/workflows/release.yml`, and in `.forgejo/workflows/mirror-github-release.yml`.
 
@@ -62,9 +62,9 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.3.5`)
+- The Git tag, prefixed with `v` (for example, `v0.3.6`)
 
-Start from the current version, `0.3.5`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.3.6`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
 0.2.9 → 0.2.10 → 0.2.11 → 0.3.0
@@ -92,7 +92,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download `All-in-One.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.5`.
+To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.6`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 

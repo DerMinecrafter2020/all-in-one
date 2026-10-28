@@ -1,5 +1,9 @@
 # All-in-One changelog
 
+## 0.3.6 — 2026-10-28
+- Restricted Minecraft version Egg mappings and installs to supported Java Minecraft Eggs; legacy Bedrock, proxy, and unknown mappings are warned about and blocked before file changes.
+- Updated AI server lookups and power-action checks to use credential-scoped Panel permission managers, including independent group-member access checks.
+
 ## 0.3.5 — 2026-10-28
 - Set the current All-in-One release version to 0.3.5; the extension continues to require Calagopus Panel `>=1.2.6`.
 
