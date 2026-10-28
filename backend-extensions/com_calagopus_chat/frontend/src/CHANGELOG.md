@@ -1,6 +1,7 @@
 # All-in-One changelog
 
 ## 0.3.6 — 2026-10-28
+- Raised the minimum supported Calagopus Panel version to `>=1.2.7` and updated the release build target.
 - Restricted Minecraft version Egg mappings and installs to supported Java Minecraft Eggs; legacy Bedrock, proxy, and unknown mappings are warned about and blocked before file changes.
 - Updated AI server lookups and power-action checks to use credential-scoped Panel permission managers, including independent group-member access checks.
 

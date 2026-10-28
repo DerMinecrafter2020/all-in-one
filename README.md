@@ -45,7 +45,7 @@ cd ..
 cargo build --profile heavy-release
 ```
 
-The extension targets Calagopus Panel `>=1.2.6`. Its frontend uses the official global page slot, separate Admin routes for Chat & AI, Advertising, and each server-tool setting, Minecraft-egg-filtered server pages, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
+The extension targets Calagopus Panel `>=1.2.7`. Its frontend uses the official global page slot, separate Admin routes for Chat & AI, Advertising, and each server-tool setting, Minecraft-egg-filtered server pages, frontend API helpers, and the extension card configuration page; the backend uses Rust routes, encrypted extension settings, permissions, and SQL migrations.
 
 ## Configure AI
 
