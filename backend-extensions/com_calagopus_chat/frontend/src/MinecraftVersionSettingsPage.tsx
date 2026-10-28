@@ -33,13 +33,18 @@ import {
 import { getAdminMinecraftVersionTypes, getMinecraftVersionGlobalStats } from './api/minecraftVersions.ts';
 import updateServerToolPages from './api/updateServerToolPages.ts';
 import { useExtTranslations } from './translations.ts';
-import {
-  type MinecraftVersionAdminSettings,
-  type MinecraftVersionTypeOrder,
-  type UpdateMinecraftVersionAdminSettings,
+import type {
+  MinecraftVersionAdminSettings,
+  MinecraftVersionTypeOrder,
+  UpdateMinecraftVersionAdminSettings,
 } from './lib/minecraftVersionSchemas.ts';
 import type { ServerToolEggSettings, ServerToolPages } from './lib/schemas.ts';
-import { setCachedServerToolEggSettings, setCachedServerToolPages } from './serverToolsVisibility.ts';
+import {
+  isMinecraftEgg,
+  setCachedServerToolEggSettings,
+  setCachedServerToolPages,
+  supportsServerToolPage,
+} from './serverToolsVisibility.ts';
 
 interface EggGroup {
   group: string;
@@ -96,6 +101,7 @@ export default function MinecraftVersionSettingsPage() {
   const [typeOrderText, setTypeOrderText] = useState('[]');
   const [typeData, setTypeData] = useState<Record<string, Record<string, { name: string }>>>({});
   const [eggOptions, setEggOptions] = useState<EggGroup[]>([]);
+  const [minecraftEggUuids, setMinecraftEggUuids] = useState<Set<string>>(new Set());
   const [eggOptionsLoading, setEggOptionsLoading] = useState(true);
   const [eggLoadFailed, setEggLoadFailed] = useState(false);
   const [typeLoadFailed, setTypeLoadFailed] = useState(false);
@@ -188,6 +194,15 @@ export default function MinecraftVersionSettingsPage() {
             items: nest.eggs.map((egg) => ({ label: egg.name, value: egg.uuid })),
           })),
         );
+        setMinecraftEggUuids(
+          new Set(
+            nests.flatMap((nest) =>
+              nest.eggs
+                .filter((egg) => isMinecraftEgg({ egg }) && supportsServerToolPage({ egg }, 'minecraftVersions'))
+                .map((egg) => egg.uuid),
+            ),
+          ),
+        );
       })
       .catch(() => {
         if (active) setEggLoadFailed(true);
@@ -239,6 +254,32 @@ export default function MinecraftVersionSettingsPage() {
         : []),
     ];
   }, [eggMappings, eggOptions, selectedEggUuids, t]);
+
+  const versionEggSelectData = useMemo(() => {
+    const compatibleEggOptions = eggOptions
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((egg) => minecraftEggUuids.has(egg.value)),
+      }))
+      .filter((group) => group.items.length > 0);
+    const unknownMappings = [...new Set(Object.values(eggMappings))].filter(
+      (eggUuid) => !minecraftEggUuids.has(eggUuid),
+    );
+    return [
+      ...compatibleEggOptions,
+      ...(unknownMappings.length
+        ? [
+            {
+              group: t('versionChanger.unsupportedEggGroup', {}),
+              items: unknownMappings.map((uuid) => ({
+                label: t('versionChanger.unsupportedEggOption', { uuid }),
+                value: uuid,
+              })),
+            },
+          ]
+        : []),
+    ];
+  }, [eggMappings, eggOptions, minecraftEggUuids, t]);
 
   const save = async () => {
     if (!settings) return;
@@ -447,7 +488,7 @@ export default function MinecraftVersionSettingsPage() {
                   <Select
                     aria-label={t('versionChanger.eggOverrideFor', { type: name })}
                     placeholder={t('versionChanger.noEggOverride', {})}
-                    data={eggSelectData}
+                    data={versionEggSelectData}
                     value={eggMappings[providerType] ?? null}
                     onChange={(value) =>
                       setEggMappings((current) => {

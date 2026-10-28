@@ -315,6 +315,8 @@ const translations = defineTranslations({
         eggOverridesTitle: 'Provider type to Panel Egg mappings',
         eggOverrideFor: 'Egg mapping for {type}',
         noEggOverride: 'Do not change the server Egg automatically',
+        unsupportedEggGroup: 'Unsupported or unknown Eggs',
+        unsupportedEggOption: 'Unsupported Egg ({uuid})',
         typesUnavailable: 'MCJars types could not be loaded; existing Egg mappings are preserved.',
         saveSettings: 'Save version changer settings',
         settingsSaved: 'Minecraft version changer settings saved.',
@@ -356,6 +358,10 @@ const translations = defineTranslations({
           'Server permissions or state changed. Refresh the page and prepare the installation again.',
         installPlanUnavailable: 'The provider did not return a usable installation plan for this build.',
         targetEggInvalid: 'The mapped Egg does not contain a usable startup command.',
+        unsupportedEggMapping:
+          'The mapped Egg {egg} is not a supported Minecraft Java server Egg. Bedrock and proxy Eggs cannot be used for this version install; choose a supported Egg in settings.',
+        unsupportedCurrentEgg:
+          'The current Egg {egg} is not a supported Minecraft Java server Egg. Configure a supported Egg mapping before installing.',
         targetJavaImageMissing:
           'The selected server Egg has no Docker image matching Java {java}; no image was changed.',
         eggRollbackFailed:

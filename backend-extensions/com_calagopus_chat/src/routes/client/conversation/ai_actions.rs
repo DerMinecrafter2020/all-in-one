@@ -291,7 +291,7 @@ mod post {
         let action_name: String = action.try_get("ai_action_type")?;
         let server = match Server::by_user_identifier(
             &state.database,
-            &user.0,
+            &permissions.0,
             &server_uuid.to_string(),
         )
         .await

@@ -91,7 +91,7 @@ export function getServerToolCapabilities(server: MinecraftEggCandidate | null |
   const details = getEggDetails(server);
   const minecraft = isMinecraftEgg(server);
   const java = minecraft && !/\b(?:bedrock|pocketmine|nukkit)\b/i.test(details);
-  const proxy = /\b(?:velocity|bungee(?:cord)?|waterfall)\b/i.test(details);
+  const proxy = /\b(?:proxy|velocity|bungee(?:cord)?|waterfall)\b/i.test(details);
   const modded = /\b(?:fabric|forge|neo[\s-]?forge|quilt|magma|mohist|arclight|catserver)\b/i.test(details);
   const pluginServer =
     /\b(?:paper(?:mc)?|spigot|purpur|bukkit|folia|sponge|magma|mohist|arclight|catserver|velocity|bungee(?:cord)?|waterfall)\b/i.test(

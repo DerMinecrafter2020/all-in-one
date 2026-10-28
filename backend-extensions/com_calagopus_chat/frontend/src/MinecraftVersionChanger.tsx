@@ -50,6 +50,7 @@ import type {
   MinecraftVersionListItem,
   MinecraftVersionType,
 } from './lib/minecraftVersionSchemas.ts';
+import { isMinecraftEgg, supportsServerToolPage } from './serverToolsVisibility.ts';
 import { useExtTranslations } from './translations.ts';
 
 interface ServerForVersionChanger {
@@ -59,6 +60,7 @@ interface ServerForVersionChanger {
   egg: {
     uuid: string;
     name: string;
+    features?: string[];
     startupCommands: Record<string, string>;
     dockerImages: Record<string, string>;
   };
@@ -81,12 +83,13 @@ interface Props {
 
 interface ProviderGroup {
   category: string;
-  types: MinecraftVersionType[];
+  types: Array<MinecraftVersionType & { identifier: string }>;
 }
 
 interface EggChoice {
   uuid: string;
   name: string;
+  features?: string[];
   startupCommands: Record<string, string>;
   dockerImages: Record<string, string>;
 }
@@ -234,6 +237,10 @@ function chooseJavaImage(egg: EggChoice, javaVersion: number | null, fallbackIma
   return images.find(([, image]) => image === fallbackImage)?.[1] ?? null;
 }
 
+function isSupportedMinecraftVersionEgg(egg: { name: string; features?: string[] }): boolean {
+  return isMinecraftEgg({ egg }) && supportsServerToolPage({ egg }, 'minecraftVersions');
+}
+
 export default function MinecraftVersionChanger({
   server,
   serverUuid,
@@ -307,8 +314,11 @@ export default function MinecraftVersionChanger({
   const mappedEgg = selectedEggOverride
     ? (eggChoices.find((choice) => choice.uuid === selectedEggOverride.eggUuid) ?? null)
     : null;
+  const mappedEggSupported = Boolean(mappedEgg && isSupportedMinecraftVersionEgg(mappedEgg));
+  const currentEggSupported = isSupportedMinecraftVersionEgg(server.egg);
   const eggMustChange = Boolean(selectedEggOverride && selectedEggOverride.eggUuid !== server.egg.uuid);
   const installTargetEgg = eggMustChange ? mappedEgg : server.egg;
+  const installTargetEggSupported = Boolean(installTargetEgg && isSupportedMinecraftVersionEgg(installTargetEgg));
   const installTargetJavaImage =
     installDetails && installTargetEgg
       ? chooseJavaImage(installTargetEgg, installDetails.version?.java ?? null, server.image)
@@ -335,7 +345,8 @@ export default function MinecraftVersionChanger({
     !serverBusy &&
     socketConnected &&
     Boolean(socketInstance) &&
-    !lacksEggPermission;
+    !lacksEggPermission &&
+    installTargetEggSupported;
 
   useEffect(() => {
     aliveRef.current = true;
@@ -387,6 +398,7 @@ export default function MinecraftVersionChanger({
             nest.eggs.map((egg) => ({
               uuid: egg.uuid,
               name: egg.name,
+              features: egg.features ?? [],
               startupCommands: egg.startupCommands,
               dockerImages: egg.dockerImages,
             })),
@@ -521,6 +533,13 @@ export default function MinecraftVersionChanger({
         throw new Error(t('versionChanger.eggChangePermissionRequired', {}));
       }
       if (!targetEgg) throw new Error(t('versionChanger.eggOverrideUnavailable', {}));
+      if (!isSupportedMinecraftVersionEgg(targetEgg)) {
+        throw new Error(
+          t(changesEgg ? 'versionChanger.unsupportedEggMapping' : 'versionChanger.unsupportedCurrentEgg', {
+            egg: targetEgg.name,
+          }),
+        );
+      }
       if (changesEgg && !Object.values(targetEgg.startupCommands)[0]) {
         throw new Error(t('versionChanger.targetEggInvalid', {}));
       }
@@ -550,6 +569,23 @@ export default function MinecraftVersionChanger({
     if (!installDetails || !socketInstance) return;
     if (!canInstallFiles || !canDeleteFiles || !serverIsOffline || serverBusy || !socketConnected) {
       addToast(t('versionChanger.permissionOrStateChanged', {}), 'error');
+      return;
+    }
+    if (lacksEggPermission) {
+      addToast(t('versionChanger.eggChangePermissionRequired', {}), 'error');
+      return;
+    }
+    if (!installTargetEgg) {
+      addToast(t('versionChanger.eggOverrideUnavailable', {}), 'error');
+      return;
+    }
+    if (!installTargetEggSupported) {
+      addToast(
+        t(eggMustChange ? 'versionChanger.unsupportedEggMapping' : 'versionChanger.unsupportedCurrentEgg', {
+          egg: installTargetEgg.name,
+        }),
+        'error',
+      );
       return;
     }
     setPreparingInstall(true);
@@ -603,9 +639,17 @@ export default function MinecraftVersionChanger({
     if (!selectedType || !clientConfig) return false;
     const override = clientConfig.eggOverrides.find((entry) => entry.providerType === selectedType);
     const changesEgg = Boolean(override && override.eggUuid !== server.egg.uuid);
-    const targetEgg: EggChoice | ServerForVersionChanger['egg'] = changesEgg ? mappedEgg! : server.egg;
     if (changesEgg && (!override || !canChangeServerEgg || !mappedEgg)) {
       throw new Error(t('versionChanger.eggChangePermissionRequired', {}));
+    }
+    const targetEgg = changesEgg ? mappedEgg : server.egg;
+    if (!targetEgg) throw new Error(t('versionChanger.eggOverrideUnavailable', {}));
+    if (!isSupportedMinecraftVersionEgg(targetEgg)) {
+      throw new Error(
+        t(changesEgg ? 'versionChanger.unsupportedEggMapping' : 'versionChanger.unsupportedCurrentEgg', {
+          egg: targetEgg.name,
+        }),
+      );
     }
 
     const targetStartup = changesEgg ? Object.values(targetEgg.startupCommands)[0] : server.startup;
@@ -675,6 +719,23 @@ export default function MinecraftVersionChanger({
     if (!preparedInstall || !installDetails || !socketInstance || !selectedType || !selectedVersion) return;
     if (!canInstallFiles || !canDeleteFiles || !serverIsOffline || serverBusy || !socketConnected) {
       addToast(t('versionChanger.permissionOrStateChanged', {}), 'error');
+      return;
+    }
+    if (lacksEggPermission) {
+      addToast(t('versionChanger.eggChangePermissionRequired', {}), 'error');
+      return;
+    }
+    if (!installTargetEgg) {
+      addToast(t('versionChanger.eggOverrideUnavailable', {}), 'error');
+      return;
+    }
+    if (!installTargetEggSupported) {
+      addToast(
+        t(eggMustChange ? 'versionChanger.unsupportedEggMapping' : 'versionChanger.unsupportedCurrentEgg', {
+          egg: installTargetEgg.name,
+        }),
+        'error',
+      );
       return;
     }
     if (hasReplacementChanges && !replaceLauncherFiles) {
@@ -830,13 +891,30 @@ export default function MinecraftVersionChanger({
               </Button>
             </Group>
             {selectedEggOverride && (
-              <Alert color={eggMustChange ? (canChangeServerEgg && mappedEgg ? 'blue' : 'yellow') : 'green'}>
+              <Alert
+                color={
+                  eggMustChange
+                    ? canChangeServerEgg && mappedEggSupported
+                      ? 'blue'
+                      : 'yellow'
+                    : currentEggSupported
+                      ? 'green'
+                      : 'yellow'
+                }
+              >
                 {eggMustChange
                   ? mappedEgg
-                    ? t('versionChanger.eggOverrideNotice', { egg: mappedEgg.name })
+                    ? mappedEggSupported
+                      ? t('versionChanger.eggOverrideNotice', { egg: mappedEgg.name })
+                      : t('versionChanger.unsupportedEggMapping', { egg: mappedEgg.name })
                     : t('versionChanger.eggOverrideUnavailable', {})
-                  : t('versionChanger.eggOverrideCurrent', { egg: mappedEgg?.name ?? server.egg.name })}
+                  : currentEggSupported
+                    ? t('versionChanger.eggOverrideCurrent', { egg: mappedEgg?.name ?? server.egg.name })
+                    : t('versionChanger.unsupportedCurrentEgg', { egg: server.egg.name })}
               </Alert>
+            )}
+            {!selectedEggOverride && !currentEggSupported && (
+              <Alert color='yellow'>{t('versionChanger.unsupportedCurrentEgg', { egg: server.egg.name })}</Alert>
             )}
             {eggMustChange && !canChangeServerEgg && (
               <Alert color='yellow'>{t('versionChanger.eggChangePermissionRequired', {})}</Alert>
@@ -922,7 +1000,7 @@ export default function MinecraftVersionChanger({
                     padding='sm'
                     radius='md'
                     className='cursor-pointer transition-colors hover:bg-gray-700/50'
-                    onClick={() => setSelectedType(providerType.identifier!)}
+                    onClick={() => setSelectedType(providerType.identifier)}
                   >
                     <Group wrap='nowrap' align='flex-start'>
                       {clientConfig &&
