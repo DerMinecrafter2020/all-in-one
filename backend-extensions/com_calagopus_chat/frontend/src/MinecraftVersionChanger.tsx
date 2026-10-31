@@ -990,7 +990,7 @@ export default function MinecraftVersionChanger({
                 <Text size='sm' fw={600} c='dimmed'>
                   {group.category}
                 </Text>
-                <div className='flex-1 border-b border-gray-700' />
+                <div className='calagopus-version-category-divider' aria-hidden='true' />
               </Group>
               <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing='sm'>
                 {group.types.map((providerType) => (
@@ -999,8 +999,16 @@ export default function MinecraftVersionChanger({
                     withBorder
                     padding='sm'
                     radius='md'
-                    className='cursor-pointer transition-colors hover:bg-gray-700/50'
+                    className='calagopus-version-type-card'
+                    role='button'
+                    tabIndex={0}
                     onClick={() => setSelectedType(providerType.identifier)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedType(providerType.identifier);
+                      }
+                    }}
                   >
                     <Group wrap='nowrap' align='flex-start'>
                       {clientConfig &&
