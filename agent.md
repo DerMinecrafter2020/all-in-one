@@ -3,7 +3,7 @@
 ## Project overview
 
 - This repository contains the All-in-One extension source, not the Panel itself. Its stable package ID is `com.calagopus.chat` in `backend-extensions/com_calagopus_chat`; keep that ID for in-place upgrades unless a package migration is explicitly intended.
-- Current extension version: `0.3.6`. Minimum supported Calagopus Panel version: `1.2.7` (`Metadata.toml`). Keep the extension manifests, workflow example, this file, and changelog aligned when bumping the version.
+- Current extension version: `0.3.7`. Minimum supported Calagopus Panel version: `1.2.7` (`Metadata.toml`). Release CI checks Panel `1.2.7` and `1.2.9` to retain backward compatibility.
 - The extension provides direct/group/AI chat, server information and confirmed power actions, advertising placements, and configurable Minecraft-only Modrinth, player, server.properties, and Minecraft version changer pages.
 - The README is for extension features and development only. Do not add a GitHub Releases section or release/tag instructions to it; keep release procedures here, in `.github/workflows/release.yml`, and in `.forgejo/workflows/mirror-github-release.yml`.
 
@@ -36,9 +36,9 @@
 
 ## Local development and checks
 
-- Develop against a matching Calagopus Panel `1.2.7` checkout; extension frontend imports use the Panel's `shared` package and `@/` aliases.
+- Develop against a matching Calagopus Panel `1.2.9` checkout; extension frontend imports use the Panel's `shared` package and `@/` aliases.
 - The Panel frontend requires Node.js `>=24` and pnpm `>=11`. Install/build from the Panel checkout's `frontend/` directory before building Rust.
-- Standard local preflight: `pnpm install`, `pnpm build:fast`, then `cargo build --profile heavy-release --package com_calagopus_chat` from the Panel root. CI runs `pnpm build:ci` and builds against `release-1.2.7`.
+- Standard local preflight: `pnpm install`, `pnpm build:fast`, then `cargo build --profile heavy-release --package com_calagopus_chat` from the Panel root. CI runs `pnpm build:ci` and builds against `release-1.2.7` and `release-1.2.9`.
 - Do not report a build/test as passing unless it actually ran. If Node, pnpm, Cargo, or Rust are missing, report that and continue with static checks only.
 
 ### Product and security invariants
@@ -62,9 +62,9 @@ Use a three-part version in `MAJOR.MINOR.PATCH` order. Keep these values identic
 
 - `backend-extensions/com_calagopus_chat/Cargo.toml` → `[package].version`
 - `backend-extensions/com_calagopus_chat/frontend/package.json` → `version`
-- The Git tag, prefixed with `v` (for example, `v0.3.6`)
+- The Git tag, prefixed with `v` (for example, `v0.3.7`)
 
-Start from the current version, `0.3.6`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
+Start from the current version, `0.3.7`, and count from the rightmost component. Increment that component through `10`; when it reaches `10`, reset it to `0` and increment the component to its left. Apply the same rollover to the middle component. Examples:
 
 ```text
 0.2.9 → 0.2.10 → 0.2.11 → 0.3.0
@@ -80,7 +80,7 @@ Before preparing or pushing release changes, inspect both local and remote tags 
 
 ## GitHub release and `.c7s.zip`
 
-The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master` **only on GitHub.com**; its `ubuntu-24.04` jobs are skipped on Forgejo. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel release 1.2.7 on an isolated GitHub runner. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
+The `.github/workflows/release.yml` workflow automatically checks pushes to `main` and `master` **only on GitHub.com**; its `ubuntu-24.04` jobs are skipped on Forgejo. When the Cargo and frontend versions match and the corresponding tag does not already exist, it builds against Panel releases 1.2.7 and 1.2.9 on isolated GitHub runners. Cargo and pnpm dependency caches speed up repeated builds. A failed preflight blocks packaging and publication. After the build passes, it creates the version tag and a GitHub Release with `All-in-One.c7s.zip`. Pushes of `v*` tags and manual runs are also supported.
 
 On a branch push, if `v<package version>` already exists remotely, the workflow deliberately skips both preflight and release to avoid duplicate releases. It does not update or recreate the existing release from newer branch commits. Bump to the next unused version before pushing those changes.
 
@@ -92,7 +92,7 @@ For an automatic release:
 
 4. Check the repository's **Actions** tab. When the workflow succeeds, download `All-in-One.c7s.zip` from the generated GitHub Release.
 
-To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.6`.
+To start a release manually, use **Actions → Release All-in-One → Run workflow**, select the branch containing the release files, and enter the version tag. For the current manifests, that tag is `v0.3.7`.
 
 If the manually selected tag already exists, the workflow checks out and packages the commit that the tag points to—not newer code from the selected branch. Use this to retry a failed release for that exact tagged commit; bump the version to publish later changes.
 
