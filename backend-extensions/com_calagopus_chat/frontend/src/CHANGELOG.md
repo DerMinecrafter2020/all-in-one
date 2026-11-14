@@ -1,5 +1,9 @@
 # All-in-One changelog
 
+## 0.3.8 — 2026-11-14
+- Fixed manual release runs so existing tags are checked and validated against the tagged commit rather than incorrectly requiring the selected branch to have the same version.
+- Prevented manual runs and repeated tag pushes from reusing tags that already have a published GitHub Release.
+
 ## 0.3.7 — 2026-11-11
 - Expanded the release build checks to Panel 1.2.7 and 1.2.9 while retaining the `>=1.2.7` minimum for older supported installations.
 
